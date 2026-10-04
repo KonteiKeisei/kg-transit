@@ -219,7 +219,7 @@ The network's settings are summed up in one line near the top of the editor (nam
 
 On a **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** scene, the city's airports of 1986 are drawn on the map in violet: the terminals as buildings, the airfield's edge dashed. Hover one for its card. The cities and their airports: Boston (Logan), New York (JFK, LaGuardia, Newark), Washington (National, Dulles), Baltimore (BWI, which serves Washington too), Philadelphia, Atlanta (Hartsfield), Chicago (O'Hare, Midway), Detroit (Metro, City), St. Louis (Lambert), Miami (Miami, Fort Lauderdale), Austin (Robert Mueller), Las Vegas (McCarran), Los Angeles (LAX, Burbank, Long Beach), San Francisco (SFO, Oakland, San Jose).
 
-**Booking.** As GM, **click an airport** to book a flight from it.
+**Booking.** As GM, **double-click an airport** to book a flight from it.
 
 1. **Who's flying:** tick the travellers, or **Whole party** for every member of the party at once. **Waive** lets someone fly free.
 2. **Destination:** choose a destination city (every other city with an airport), then one of its airports (a city with one airport has it chosen for you). **Checking bags** adds the ticket counter and the baggage carousel.

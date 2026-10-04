@@ -1,5 +1,5 @@
 import { CARS } from "./catalog.mjs";
-import { ASSET_PATH, MODULE_ID, SETTINGS, escapeHtml, formatClock, setting } from "./config.mjs";
+import { attachAboveCanvas, ASSET_PATH, MODULE_ID, SETTINGS, escapeHtml, formatClock, setting } from "./config.mjs";
 import { tripStops } from "./network.mjs";
 import { STAGE, Scenery, sceneryKey, timeOfDay, tripKeys } from "./scenery.mjs";
 import { DEFAULT_THEME, isTheme } from "./themes.mjs";
@@ -115,7 +115,8 @@ export class RideOverlay {
       this.scenery.preload(tripKeys(this.ride.trip, this.#when(this.ride.start)));
     }
 
-    document.body.append(root);
+    // Over the canvas, under Foundry's interface, sheets and other modules' HUDs.
+    attachAboveCanvas(root);
     this.resizeObserver = new ResizeObserver(() => this.#fit());
     this.resizeObserver.observe(root);
     requestAnimationFrame(() => {

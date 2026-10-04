@@ -23,6 +23,22 @@ export const FLAGS = {
   network: "network"
 };
 
+/**
+ * Put a full-screen overlay (the ride window, the flight screen) just above the canvas and
+ * under everything else: Foundry's interface, sheets and other modules' HUDs (token bars,
+ * action HUDs) stay on top. It goes right after the canvas in the page, at the canvas's own
+ * stacking level, so it paints over the map and under anything stacked higher.
+ * Returns that level (a z-index string), for an overlay that must sometimes rise.
+ */
+export function attachAboveCanvas(el) {
+  const board = document.getElementById("board");
+  if (board?.parentElement) board.after(el);
+  else document.body.prepend(el);
+  const z = board ? Number.parseInt(getComputedStyle(board).zIndex, 10) : Number.NaN;
+  el.style.zIndex = Number.isFinite(z) ? String(z) : "auto";
+  return el.style.zIndex;
+}
+
 export function setting(key) {
   return game.settings.get(MODULE_ID, key);
 }

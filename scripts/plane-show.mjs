@@ -13,7 +13,7 @@
 // nothing shows (and only once the next view's art has loaded), fade back up. The screen opens
 // from black the same way, so no half-loaded view is ever seen.
 
-import { ASSET_PATH, MODULE_ID, SETTINGS, escapeHtml, formatClock } from "./config.mjs";
+import { ASSET_PATH, MODULE_ID, SETTINGS, attachAboveCanvas, escapeHtml, formatClock } from "./config.mjs";
 import { AIRCRAFT, AIRLINES, formatMinutes, midFlight, nextSkip } from "./flights.mjs";
 import { darkness, drawLights, readLights } from "./plane-lights.mjs";
 import { SkyPainter, turbulence } from "./sky.mjs";
@@ -37,6 +37,7 @@ const GROUND_VOLUME = 0.3;
 /** Each half of a dip to black (ms). */
 const BLACK_MS = 700;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const now = () => performance.now();
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 const images = new Map();
 
@@ -206,7 +207,8 @@ export class PlaneShow {
       <div class="kgt-flight-status"><div class="kgt-flight-step"><strong></strong><em></em></div><span></span></div>
       <div class="kgt-flight-pip"><canvas></canvas><img src="${ASSET_PATH}/flight/cabin.webp" alt=""></div>`;
     root.style.opacity = "0";
-    document.body.append(root);
+    // Over the canvas, under Foundry's interface, sheets and other modules' HUDs.
+    this.baseZ = attachAboveCanvas(root);
     this.root = root;
     this.canvas = root.querySelector(".kgt-flight-sky");
     this.pip = root.querySelector(".kgt-flight-pip");
@@ -340,22 +342,29 @@ export class PlaneShow {
     // boarding and getting off (not while a skip's cinematic plays).
     const where = f.phase === "landed" ? "destination" : step.where;
     const bridge = f.phase !== "landed" && BRIDGE_STEPS.has(step.key);
-    this.#setGround(this.cinematic || where === "air" ? null : bridge ? "bridge" : (where === "origin" ? f.from.iata : f.to.iata));
+    // While a skip's cinematic plays: in the air the plane flies over it; on the ground only
+    // the cinematic shows ("cine": no plane, no terminal), so no plane appears between ground scenes.
+    const air = where === "air";
+    this.#setGround(air ? null : this.cinematic ? "cine" : bridge ? "bridge" : (where === "origin" ? f.from.iata : f.to.iata));
+    // Over the cinematic only for the plane in the air; otherwise under the interface and sheets.
+    const over = this.cinematic && air;
+    this.root.classList.toggle("over-cinematic", over);
     // Beside the sidebar, so the chat stays in reach; full screen while the cinematic plays.
     const sidebar = document.getElementById("sidebar");
     this.root.style.right = this.cinematic ? "0px" : `${Math.round(sidebar?.getBoundingClientRect().width ?? 0)}px`;
   }
 
   /**
-   * The terminal of an airport (its code), the jet bridge ("bridge"), or the flight (null).
-   * Changes queue up and run one at a time (#changeGround), so a fade is never cut short.
+   * The terminal of an airport (its code), the jet bridge ("bridge"), nothing but a skip's
+   * cinematic ("cine"), or the flight (null). Changes queue up and run one at a time
+   * (#changeGround), so a fade is never cut short.
    */
   #setGround(code) {
     const light = tarmacLight(this.hour ?? 12);
     // The weather and the night dim the view outside.
     const [bright, sat] = SKY_DIM[this.weather?.sky] ?? SKY_DIM.clear;
     for (const img of this.tarmacs) img.style.filter = `brightness(${(bright * light.dim).toFixed(2)}) saturate(${sat})`;
-    const key = code === "bridge" ? "bridge" : code ? `${code}|${light.plate}` : null;
+    const key = code === "bridge" || code === "cine" ? code : code ? `${code}|${light.plate}` : null;
     if (key === this.groundAt) return;
     this.groundAt = key;
     this.groundJob = (this.groundJob ?? Promise.resolve())
@@ -368,6 +377,9 @@ export class PlaneShow {
     if (!root || this.groundAt !== key) return;
     // Everything the next view needs, loaded before anything changes on screen.
     let terminal = null, tarmac = null, bridge = null;
+    // Nothing of ours on screen: the plane hidden too.
+    const cine = code === "cine";
+    if (cine) code = null;
     if (code === "bridge") {
       bridge = await cachedImage(JET_BRIDGE);
       if (!bridge) code = null;
@@ -376,15 +388,17 @@ export class PlaneShow {
       // An airport without art: the flight stays on screen.
       if (!terminal || !tarmac) code = null;
     }
-    if (!code) await this.platePromise;
+    if (!code && !cine) await this.platePromise;
     if (this.root !== root || this.groundAt !== key) return;
     const on = !!code;
     if (on && this.groundOn && this.groundCode === code) {
       // Day turning to dusk at the same airport: both plates are loaded, so the view cross-fades.
       this.#showTarmac(tarmac.src, true);
-    } else if (on || this.groundOn) {
-      // Terminal, jet bridge, flight: every change goes through black.
-      await this.#toBlack(1);
+    } else if (on || this.groundOn || cine !== !!this.hidePlane) {
+      // Terminal, jet bridge, flight: every change goes through black. Straight to black when a
+      // skip's cinematic covers the screen or has only just lifted, so nothing shows in between.
+      const covered = this.cinematic || now() - (this.cinematicEndedAt ?? -1e9) < 1500;
+      await this.#toBlack(1, covered);
       if (this.root !== root || this.groundAt !== key) return;
       if (bridge) this.bridge.src = bridge.src;
       else if (on) {
@@ -395,6 +409,8 @@ export class PlaneShow {
       this.groundCode = on ? code : null;
       root.classList.toggle("on-ground", on);
       root.classList.toggle("in-bridge", !!bridge);
+      this.hidePlane = cine;
+      root.classList.toggle("no-plane", cine);
       this.#mixSound();
       // Decoded and painted before the black lifts.
       const shown = bridge ? [this.bridge] : on ? [this.terminal, ...this.tarmacs] : [];
@@ -419,10 +435,17 @@ export class PlaneShow {
     }
   }
 
-  /** Fade the black over the screen in (1) or out (0); resolves when the fade is done. */
-  #toBlack(level) {
+  /** Fade the black over the screen in (1) or out (0), or cut to it; resolves when it is done. */
+  #toBlack(level, instant = false) {
     const black = this.black;
     if (!black || Math.abs((Number(black.style.opacity) || 0) - level) < 0.01) return Promise.resolve();
+    if (instant) {
+      black.style.transition = "none";
+      black.style.opacity = String(level);
+      void black.offsetWidth;
+      black.style.transition = "";
+      return Promise.resolve();
+    }
     black.style.opacity = String(level);
     return sleep(BLACK_MS);
   }
@@ -439,7 +462,12 @@ export class PlaneShow {
     const canvas = this.canvas;
     if (!canvas) return;
     const cine = document.getElementById("calendaria-cinematic");
-    this.cinematic = !!cine && Number(getComputedStyle(cine).opacity) > 0.5;
+    const cinematic = !!cine && Number(getComputedStyle(cine).opacity) > 0.5;
+    // The cinematic starting or ending changes the view: decide it now, not at the next read,
+    // so the plane never shows for a moment over a ground scene after a skip.
+    if (cinematic !== this.cinematic) this.readAt = 0;
+    if (this.cinematic && !cinematic) this.cinematicEndedAt = now;
+    this.cinematic = cinematic;
     if (now - this.readAt > READ_MS) { this.readAt = now; this.#read(now); }
     const w = Math.round(this.root.clientWidth), h = Math.round(this.root.clientHeight);
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
@@ -467,7 +495,7 @@ export class PlaneShow {
     // The plane: a slow swell, then jolts as rough as the weather, kept gentle. Never faster
     // than life. None of it on the ground: the terminal is still, and the plane is not shown.
     const plate = this.plate;
-    if (!plate || this.groundOn) return;
+    if (!plate || this.groundOn || this.hidePlane) return;
     const rough = turbulence(this.weather);
     if (Math.random() < dt * (0.2 + 1.4 * rough)) this.joltV += (Math.random() - 0.5) * 420 * rough;
     this.joltV += (-this.jolt * 40 - this.joltV * 7) * dt;

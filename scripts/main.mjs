@@ -119,9 +119,17 @@ Hooks.on("canvasReady", async () => {
   // A city scene seen for the first time gets its city's network (and draws again with it).
   if (await autoSetupCity(canvas.scene)) layer.draw();
 });
-// An airport clicked on a KG Cities map (the GM): book a flight from it.
+// An airport double-clicked on a KG Cities map (the GM): book a flight from it. KG Cities
+// reports every click; two on the same airport within the double-click time are a double click.
+const AIRPORT_DOUBLE_CLICK_MS = 350;
+let airportClick = { id: null, at: 0 };
 Hooks.on("kgCities.airport", ({ airport, scene }) => {
   if (!game.user.isGM) return;
+  const now = Date.now();
+  const id = airport?.iata ?? airport?.id;
+  const double = airportClick.id === id && now - airportClick.at < AIRPORT_DOUBLE_CLICK_MS;
+  airportClick = double ? { id: null, at: 0 } : { id, at: now };
+  if (!double) return;
   if (flights.flight) return ui.notifications.warn("A flight is already in the air.");
   if (ride.ride) return ui.notifications.warn("A ride is under way.");
   new FlightDialog({ airport, scene, flights }).render({ force: true });

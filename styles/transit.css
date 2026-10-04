@@ -125,7 +125,8 @@
   --line: #d6312b;
   --strip: #e05a50;
   position: fixed;
-  z-index: 9000;
+  /* Its stacking level is set when it opens: just over the canvas, under the interface,
+     sheets and other modules' HUDs (attachAboveCanvas, config.mjs). */
   color: #fff;
   font-family: Helvetica, Arial, sans-serif;
 }
@@ -943,13 +944,21 @@
 .kg-transit-booking .kgt-steps .step-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .kg-transit-booking .hint { margin: 6px 0 0; font-size: 0.85em; opacity: 0.75; }
 
-/* In flight: over Calendaria's cinematic (z-index 10000), clicks pass through to it. */
+/* The flight screen: just over the canvas, under the interface, sheets and other modules' HUDs
+   (its stacking level is set when it opens, attachAboveCanvas in config.mjs). Only while a skip
+   in the air plays Calendaria's cinematic (z-index 10000, which covers everything itself) does
+   it rise over it, so the plane flies over the cinematic. Clicks pass through. */
 #kg-transit-flight {
   position: fixed;
   inset: 0;
-  z-index: 10001;
   pointer-events: none;
 }
+#kg-transit-flight.over-cinematic { z-index: 10001 !important; }
+/* A skip on the ground: only the cinematic shows, no plane or cabin window. */
+#kg-transit-flight.no-plane .kgt-flight-pip { display: none; }
+/* Under the cinematic, black (no sky), so its fade-out shows black, then the next scene. */
+#kg-transit-flight.no-plane { background: #000; }
+#kg-transit-flight.no-plane .kgt-flight-sky { visibility: hidden; }
 #kg-transit-flight canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 #kg-transit-flight .kgt-flight-caption {
   position: absolute;
