@@ -30,7 +30,7 @@
     <button id="fly">Fly (real time; the GM's controls are at the top)</button>
     <label>Jump to (after Fly)
       <span style="display:flex;gap:6px;flex-wrap:wrap">
-        <button data-jump="origin">Departing terminal</button><button data-jump="air">In the air</button><button data-jump="destination">Arriving terminal</button>
+        <button data-jump="origin">Departing terminal</button><button data-step="taxiOut" data-at="0.3">Taxi out</button><button data-step="taxiOut" data-before="26">Takeoff</button><button data-jump="air">In the air</button><button data-step="taxiIn" data-at="0">Taxi in</button><button data-jump="destination">Arriving terminal</button>
       </span>
     </label>
   </div>
@@ -77,6 +77,20 @@
     let t = 0;
     for (const s of flight.plan.steps) {
       if (s.where === b.dataset.jump) { game.time.worldTime = flight.start + (t + s.minutes / 2) * 60; return; }
+      t += s.minutes;
+    }
+  });
+  // A step by key: so far into it (data-at, 0 to 1), or so many seconds before its end (data-before).
+  document.querySelectorAll("[data-step]").forEach((b) => b.onclick = () => {
+    if (!flight) return;
+    let t = 0;
+    for (const s of flight.plan.steps) {
+      if (s.key === b.dataset.step) {
+        const at = b.dataset.before ? (t + s.minutes) * 60 - Number(b.dataset.before) : (t + s.minutes * Number(b.dataset.at)) * 60;
+        game.time.worldTime = flight.start + at;
+        show.sync(flight);
+        return;
+      }
       t += s.minutes;
     }
   });

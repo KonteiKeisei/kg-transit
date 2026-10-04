@@ -1,5 +1,7 @@
-// Where the train is at a given moment of a trip, for the ride overlay.
+// Where the train is at a given moment of a trip, for the ride overlay and the tokens.
 // Pure: no Foundry, no DOM.
+
+import { pointOnTrip, shapeOf, tripTrack } from "./route-path.mjs";
 
 /** Cruise speed of the window scenery, in texture pixels per second. */
 export const CRUISE_PX = 900;
@@ -79,19 +81,39 @@ export function stateAt(trip, elapsed) {
 }
 
 /**
- * Where the train is on the map at `elapsed` seconds: between two stations it moves in a
- * straight line, easing out of and into each stop on the same curve as the ride; otherwise
- * it is at the station. `positions` maps station ids to { x, y }.
+ * How far along the trip's track the train is at `elapsed` seconds, in map pixels from the
+ * origin: between stations it eases out of and into each stop on the same curve as the ride.
+ * `track` is one shape per segment (route-path.mjs tripTrack); null if a stop isn't placed.
  */
-export function trainPoint(trip, elapsed, positions) {
+export function trainDistance(trip, elapsed, track) {
   const state = stateAt(trip, elapsed);
-  if (state.phase === "running") {
-    const seg = trip.segments[state.segmentIndex];
-    const a = positions[seg.from];
-    const b = positions[seg.to];
-    if (!a || !b) return null;
-    return { x: a.x + (b.x - a.x) * state.fraction, y: a.y + (b.y - a.y) * state.fraction };
+  const index = state.phase === "arrived" ? track.length : state.segmentIndex;
+  let d = 0;
+  for (let i = 0; i < index; i++) {
+    if (!track[i]) return null;
+    d += track[i].length;
   }
-  const at = positions[state.station];
-  return at ? { x: at.x, y: at.y } : null;
+  if (state.phase !== "running") return track[Math.min(index, track.length - 1)] ? d : null;
+  return track[index] ? d + track[index].length * state.fraction : null;
+}
+
+/**
+ * Where the train is on the map at `elapsed` seconds, along each stretch's track (straight, or
+ * curved through its travel nodes). `positions` maps station ids to { x, y }; `shapes` is the
+ * network's routeShapes (straight lines between the positions when left out).
+ */
+export function trainPoint(trip, elapsed, positions, shapes = straightShapes(positions)) {
+  const track = tripTrack(trip, shapes);
+  const d = trainDistance(trip, elapsed, track);
+  return d === null ? null : pointOnTrip(track, d);
+}
+
+/** Straight track between station positions, for networks without their lines to hand. */
+export function straightShapes(positions) {
+  return {
+    get: (lineId, from, to) => {
+      const a = positions[from], b = positions[to];
+      return a && b ? shapeOf([{ x: a.x, y: a.y }, { x: b.x, y: b.y }]) : null;
+    }
+  };
 }

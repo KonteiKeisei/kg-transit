@@ -3,7 +3,7 @@ import { BoardDialog } from "./board-dialog.mjs";
 import { FlightController } from "./flight.mjs";
 import { FlightDialog } from "./flight-dialog.mjs";
 import { CARS } from "./catalog.mjs";
-import { applyCityPreset, autoSetupCity, cityPreset, sceneCity } from "./city-setup.mjs";
+import { applyCityPreset, autoSetupCity, cityPreset, sceneCity, traceOnce } from "./city-setup.mjs";
 import { FLAGS, MODULE_ID, SETTINGS, saveNetwork, sceneEnabled } from "./config.mjs";
 import { starterNetwork } from "./demo-network.mjs";
 import { NetworkEditor } from "./editor.mjs";
@@ -118,6 +118,8 @@ Hooks.on("canvasReady", async () => {
   layer.draw();
   // A city scene seen for the first time gets its city's network (and draws again with it).
   if (await autoSetupCity(canvas.scene)) layer.draw();
+  // A city network from before its lines followed the track gets traced, once.
+  else await traceOnce(canvas.scene);
 });
 // An airport double-clicked on a KG Cities map (the GM): book a flight from it. KG Cities
 // reports every click; two on the same airport within the double-click time are a double click.

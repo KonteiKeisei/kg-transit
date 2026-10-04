@@ -446,6 +446,10 @@
 }
 .kgt-controls button[data-act="size"] { flex: 0 0 36px; }
 .kgt-controls button:hover { background: rgba(255, 255, 255, 0.25); }
+/* Four GM buttons share the window's width. */
+#kg-transit-ride:not(.expanded) .kgt-controls:not(.player) button:not([data-act="size"]) { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 12px; padding: 0 6px; }
+.kgt-controls button.danger { background: #b3201a; border-color: #ff6b5e; font-weight: 700; }
+.kgt-controls button.danger:hover { background: #d62a22; }
 /* Players only get the expand button, in the corner of the window. */
 #kg-transit-ride:not(.expanded) .kgt-controls.player {
   left: auto;
@@ -927,6 +931,12 @@
 #kg-transit-flight .kgt-ground-bridge { object-fit: cover; display: none; }
 #kg-transit-flight.in-bridge .kgt-ground-bridge { display: block; }
 #kg-transit-flight.in-bridge .kgt-flash { display: none; }
+/* Taxiing: the cabin full screen, the airport painted behind its windows (taxi-view.mjs). */
+#kg-transit-flight .kgt-flight-taxi { position: absolute; inset: 0; display: none; overflow: hidden; }
+#kg-transit-flight.in-taxi .kgt-flight-taxi { display: block; }
+#kg-transit-flight .kgt-flight-taxi canvas,
+#kg-transit-flight .kgt-flight-taxi img { position: absolute; inset: 0; width: 100%; height: 100%; }
+#kg-transit-flight .kgt-flight-taxi img { object-fit: cover; transform-origin: 50% 60%; }
 /* Every change of scene dips through this (and the screen opens from it). Over the scenes,
    under the captions, clock, controls and status line. */
 #kg-transit-flight .kgt-flight-black {
@@ -979,8 +989,13 @@
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  pointer-events: none;
-}#kg-transit-flight canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* The scene under it is out of reach while flying (plane-show.mjs #holdCanvas). */
+  pointer-events: auto;
+  cursor: default;
+}
+/* A KG Cities hover card left open at take-off (the airport's) waits until the flight ends. */
+body.kgt-flying .kgc-card { display: none; }
+#kg-transit-flight canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 #kg-transit-flight .kgt-flight-caption {
   position: absolute;
   top: calc(var(--safe-top, 0px) + 14px);

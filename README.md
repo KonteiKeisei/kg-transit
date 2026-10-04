@@ -147,7 +147,18 @@ On the track between each pair of stops is the scenery the riders see on that st
 
 Outdoors, each stretch has its own buildings or landscape beside the track and a skyline or horizon behind it, drawn in the stretch's theme: City in Industrial is brick tenements, gas lamps and smokestacks; in Future it is neon towers and holo signs.
 
-The **minutes** box is optional. Leave it empty and the time is worked out from the map distance (the grey number shows that estimate). Type a number to set it yourself, for example when the line curves a long way between two close stops.
+The **minutes** box is optional. Leave it empty and the time is worked out from the length of the track on the map (the grey number shows that estimate). Type a number to set it yourself.
+
+**Curved track (travel nodes).** Each stretch between two stops runs straight unless you give it travel nodes. While the editor is open, every line is drawn on the map, the selected line on top with its nodes as small white dots:
+
+- **Double-click the line's track** to add a node there.
+- **Drag a node** to bend the track through that spot. The curve flows smoothly through the stops and nodes.
+- **Double-click (or right-click) a node** to take it out.
+- A stretch with nodes shows a curve label with its count in the editor, and a **Straighten** button (ruler icon) that takes them all out.
+
+The tokens ride along the curves, and travel times count the track's real length. Nodes belong to the stretch between their two stops: reorder or remove a stop and that stretch goes back to straight.
+
+On a KG Cities scene, the lines follow the city's real track as KG Cities draws it. The stretches are traced along it as travel nodes when the network is set up, and once, automatically, for city networks set up before 4.8. **Follow the tracks** in the editor's city bar traces them again, replacing any nodes you moved. Traced nodes are ordinary travel nodes, so you can still drag them about.
 
 ## 7. Themes
 
@@ -207,12 +218,13 @@ The network's settings are summed up in one line near the top of the editor (nam
 
 - **Time runs in real time**: one game second per real second. Pausing the game pauses the train, the clock and the token. If you move time forward yourself, the train jumps ahead to match.
 - **The ride window** opens beside the sidebar for everyone who sees the ride, with the car interior, the scenery outside, the line, the clock and the arrival time. The expand button makes it full screen. Its look follows the theme of where the train is: brass and serif type for Industrial, parchment for Fantasy, neon for Future, with a matching colour wash over the car.
-- **On the map**, the party token travels the line from stop to stop, easing in and out of stations. Players' views follow it at a closer zoom and pull back out when the trip ends; the GM's view does the same while one of the ride's tokens is selected.
-- **GM buttons** in the ride window:
-  - **Arrive**: the rest of the trip passes over 10 seconds.
-  - **Next stop**: the riders get off at the next station.
-  - **End**: stop now, at the stop the train is at or heading for, with no more time passing.
-- **On arrival**, the tokens settle at the destination and a chat card records it.
+- **On the map**, the ride's tokens travel the line single file, the party token in front, along the track (curved where it has travel nodes), easing in and out of stations. While the train moves, the tokens' art bobs gently on every screen. Players' views follow the party token at a closer zoom and pull back out when the trip ends; the GM's view does the same while one of the ride's tokens is selected.
+- **GM buttons** in the ride window (players only get the full screen button):
+  - **Skip to next stop**: the train travels on to the next stop over 5 seconds, then the ride carries on in real time.
+  - **Get off next stop**: if the train is standing at a stop, everyone gets off there. Otherwise it travels on to the next stop over 5 seconds and they get off there.
+  - **Arrive**: the rest of the trip passes over 15 seconds.
+  - **Emergency stop** (red): the train stops where it is and everyone gets off there, ending the ride with no more time passing.
+- **Getting off**, the tokens gather just below the stop (or where the emergency stop left them) in as tight a circle as they make: the party token in the middle, the rest in evenly spaced rings around it. A chat card records it.
 - If Calendaria's real-time clock was running, it is paused for the ride and restarted afterwards.
 
 ## 12. Air travel between cities
@@ -228,15 +240,17 @@ On a **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** scene, the city'
 5. **Encounter on the way** (optional): pick one of your scenes and when it happens: in the departing airport, on the plane before takeoff, during the flight, on the plane after landing, or in the arriving airport.
 6. **Fly.**
 
-**The flight runs in real time**, like a ride: one game second per real second, from the curb at one end to the curb at the other, so the table can talk and play the trip out. The game unpauses for it, and pausing stops the clock. The trip is five scenes, each one filling the free part of the canvas (under the scene navigation, beside the scene controls and the sidebar, above the chat's bottom line and any camera dock), with Foundry's interface on top as usual:
+**The flight runs in real time**, like a ride: one game second per real second, from the curb at one end to the curb at the other, so the table can talk and play the trip out. The game unpauses for it, and pausing stops the clock. The trip is seven scenes, each one filling the free part of the canvas (under the scene navigation, beside the scene controls and the sidebar, above the chat's bottom line and any camera dock), with Foundry's interface on top as usual:
 
 1. **The departure terminal** (curb to gate): that airport's own 1980s terminal, still, with the tarmac out of the windows by day or at dusk and the weather falling past the glass (rain with drops running down it, snow, fog, lightning). The terminal's ambiance plays.
-2. **The jet bridge** (boarding, taxi and takeoff), the terminal's ambiance quieter.
-3. **The flight** (in the air): the plane from the side in its airline's tail colour (or its own livery, from your **Plane liveries folder**), buffeted by the weather, with the jets roaring. The sky follows the hour, and after dark the plane flies with its lights on: lit windows, navigation lights, flashing beacons and strobes, the logo light on the fin. The cabin shows in its own window, like the subway ride window: in the corner beside the sidebar and above the chat's bottom line, resizable, with an expand button anyone can use to fill the screen and shrink it back.
-4. **The jet bridge** (taxi to the gate, off the plane).
-5. **The arrival terminal** (baggage claim and leaving the airport).
+2. **The jet bridge** (boarding), the terminal's ambiance quieter.
+3. **The cabin, taxiing out**: the cabin full screen, a generic airport out of its windows in perspective. The taxiway's edge, its blue lights and signs come from the front and slide back past the window; across the grass are the runway, hangars, the terminal with planes at its gates, a control tower and the city on the horizon. The plane bumps over the taxiway's joints, the engines idling. The last 20 seconds are the takeoff: full power, the runway rushing by faster and faster with a rising rattle, the nose coming up, then the ground falling away below the windows until there is only sky. After dark the airport is lit and the cabin lights are turned down.
+4. **The flight** (in the air): the plane from the side in its airline's tail colour (or its own livery, from your **Plane liveries folder**), buffeted by the weather, with the jets roaring. The sky follows the hour, and after dark the plane flies with its lights on: lit windows, navigation lights, flashing beacons and strobes, the logo light on the fin. The cabin shows in its own window, like the subway ride window: in the corner beside the sidebar and above the chat's bottom line, resizable, with an expand button anyone can use to fill the screen and shrink it back.
+5. **The cabin, taxiing in**: the landing rollout slowing on the runway, then taxiing to the gate and rolling to a stop.
+6. **The jet bridge** (off the plane).
+7. **The arrival terminal** (baggage claim and leaving the airport).
 
-Each change of scene is a fade to black and back up on the next one (only once its art has loaded); steps within a scene change nothing on screen. The status line shows each step and the time it has left ("Boarding · 14 min left"), and the clock and the arrival time stay top right.
+Each change of scene is a fade to black and back up on the next one (only once its art has loaded); steps within a scene change nothing on screen. The status line shows each step and the time it has left ("Boarding · 14 min left"), and the clock and the arrival time stay top right. The map under the flight is out of reach until it ends: no clicks, zooming or hover cards through it.
 
 **The GM's controls** at the top of the flight screen:
 

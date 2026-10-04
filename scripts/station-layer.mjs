@@ -1,5 +1,6 @@
 import { SETTINGS, escapeHtml, sceneEnabled, sceneNetwork, setting, worldTheme } from "./config.mjs";
 import { isPlaced, linesAt } from "./network.mjs";
+import { curvePoints, insertIndex, nearestOnPolyline, segmentNodes } from "./route-path.mjs";
 import { THEMES, stationTheme } from "./themes.mjs";
 
 const DOUBLE_CLICK_MS = 350;
@@ -52,6 +53,10 @@ const ICON_LOOKS = {
  * stations), shaped by the station's theme, with a disc and the network's badge letter. Hover names the stop;
  * the GM double-clicks to board. While the network editor is open the GM can drag stations,
  * and a "place" request turns the next canvas click into that station's position.
+ *
+ * While editing, every line's track is drawn too, and the selected line's travel nodes can be
+ * dragged; double-click its track to add a node there, double-click (or right-click) a node to
+ * take it out.
  */
 export class StationLayer {
   constructor() {
@@ -66,6 +71,11 @@ export class StationLayer {
     this.onBoard = null;
     /** While the editor is open: called with (id, x, y) when a station is dragged. */
     this.onMove = null;
+    /** While the editor is open: called with (lineId, segmentIndex, nodes) when travel nodes change. */
+    this.onPath = null;
+    this.lineId = null;
+    this.tracks = null;
+    this.lastTrackClick = { key: null, time: 0 };
     this.placing = null;
   }
 
@@ -90,6 +100,7 @@ export class StationLayer {
       this.container.addChild(icon);
       this.icons.set(station.id, icon);
     }
+    this.tracksZoom = null;
     this.rescale();
   }
 
@@ -97,13 +108,164 @@ export class StationLayer {
     this.hideTooltip();
     this.container?.destroy({ children: true });
     this.container = null;
+    this.tracks?.destroy({ children: true });
+    this.tracks = null;
     this.icons.clear();
     this.drag = null;
   }
 
   setEditing(editing) {
     this.editing = editing;
+    this.tracksZoom = null;
     this.rescale();
+    if (!editing) this.drawTracks();
+  }
+
+  /** The line whose travel nodes the editor works on. */
+  selectLine(lineId) {
+    if (this.lineId === lineId) return;
+    this.lineId = lineId;
+    this.drawTracks();
+  }
+
+  /** Every line's track while editing, the selected one on top with its travel nodes. */
+  drawTracks() {
+    if (!this.editing || !this.net || !canvas.interface) {
+      this.tracks?.destroy({ children: true });
+      this.tracks = null;
+      return;
+    }
+    if (!this.tracks || this.tracks.destroyed) {
+      this.tracks = new PIXI.Container();
+      this.tracks.eventMode = "passive";
+      this.tracks.zIndex = 999;
+      canvas.interface.addChild(this.tracks);
+    }
+    for (const child of this.tracks.removeChildren()) child.destroy({ children: true });
+    const zoom = canvas.stage.scale.x || 1;
+    const at = new Map(this.net.stations.filter(isPlaced).map((s) => [s.id, s]));
+    const lines = [...this.net.lines].sort((a, b) => (a.id === this.lineId) - (b.id === this.lineId));
+    for (const line of lines) {
+      const selected = line.id === this.lineId;
+      const color = foundry.utils.Color.from(line.color).valueOf();
+      const g = new PIXI.Graphics();
+      line.segments.forEach((seg, i) => {
+        const a = at.get(line.stops[i]), b = at.get(line.stops[i + 1]);
+        if (!a || !b) return;
+        const pts = curvePoints(a, segmentNodes(seg, line.stops[i], line.stops[i + 1]), b);
+        g.lineStyle({ width: (selected ? 5 : 3) / zoom, color, alpha: selected ? 0.95 : 0.45, cap: "round", join: "round" });
+        g.moveTo(pts[0].x, pts[0].y);
+        for (const p of pts.slice(1)) g.lineTo(p.x, p.y);
+      });
+      this.tracks.addChild(g);
+      if (selected) this.#editableTrack(line, at, g, zoom);
+    }
+  }
+
+  /** The selected line: its track takes double-clicks for new nodes, and its nodes drag. */
+  #editableTrack(line, at, g, zoom) {
+    const spans = line.segments.map((seg, i) => {
+      const a = at.get(line.stops[i]), b = at.get(line.stops[i + 1]);
+      return a && b ? { i, a, b, nodes: segmentNodes(seg, line.stops[i], line.stops[i + 1]), from: line.stops[i], to: line.stops[i + 1] } : null;
+    }).filter(Boolean);
+    const polylines = spans.map((s) => curvePoints(s.a, s.nodes, s.b));
+    const nearest = (p) => {
+      let best = null;
+      polylines.forEach((pts, k) => {
+        const hit = nearestOnPolyline(pts, p);
+        if (!best || hit.distance < best.distance) best = { ...hit, span: spans[k] };
+      });
+      return best;
+    };
+    this.selectedTrack = g;
+    g.eventMode = "static";
+    g.cursor = "copy";
+    g.hitArea = { contains: (x, y) => (nearest({ x, y })?.distance ?? Infinity) < 9 / zoom };
+    g.on("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      event.stopPropagation();
+      const p = event.getLocalPosition(this.tracks);
+      const hit = nearest(p);
+      if (!hit || !this.#double(`track:${line.id}`)) return;
+      const { span } = hit;
+      const nodes = [...span.nodes];
+      nodes.splice(insertIndex(span.a, nodes, span.b, hit.point), 0, { x: Math.round(hit.point.x), y: Math.round(hit.point.y) });
+      this.#setNodes(line, span, nodes);
+    });
+    for (const span of spans) {
+      span.nodes.forEach((node, k) => {
+        const h = new PIXI.Graphics();
+        h.lineStyle(2 / zoom, foundry.utils.Color.from(line.color).valueOf(), 1).beginFill(0xffffff).drawCircle(0, 0, 6 / zoom).endFill();
+        h.position.set(node.x, node.y);
+        h.eventMode = "static";
+        h.cursor = "move";
+        h.hitArea = new PIXI.Circle(0, 0, 10 / zoom);
+        h.on("pointerdown", (event) => this.#onNodeDown(line, span, k, h, event));
+        this.tracks.addChild(h);
+      });
+    }
+  }
+
+  /** True when this is the second click on the same thing within the double-click time. */
+  #double(key) {
+    const now = Date.now();
+    const double = this.lastTrackClick.key === key && now - this.lastTrackClick.time < DOUBLE_CLICK_MS;
+    this.lastTrackClick = double ? { key: null, time: 0 } : { key, time: now };
+    return double;
+  }
+
+  #setNodes(line, span, nodes) {
+    const seg = line.segments[span.i];
+    if (nodes.length) seg.path = { from: span.from, to: span.to, nodes };
+    else delete seg.path;
+    this.drawTracks();
+    this.onPath?.(line.id, span.i, nodes);
+  }
+
+  #onNodeDown(line, span, k, handle, event) {
+    event.stopPropagation();
+    const nodes = span.nodes.map((n) => ({ ...n }));
+    if (event.button === 2 || (event.button === 0 && this.#double(`node:${line.id}:${span.i}:${k}`))) {
+      nodes.splice(k, 1);
+      return this.#setNodes(line, span, nodes);
+    }
+    if (event.button !== 0) return;
+    const stage = canvas.stage;
+    let moved = false;
+    const move = (e) => {
+      const p = e.getLocalPosition(this.tracks);
+      handle.position.set(p.x, p.y);
+      nodes[k] = { x: Math.round(p.x), y: Math.round(p.y) };
+      moved = true;
+      // The track follows the node as it moves.
+      const seg = line.segments[span.i];
+      seg.path = { from: span.from, to: span.to, nodes };
+      if (this.selectedTrack && !this.selectedTrack.destroyed) this.#redrawLine(this.selectedTrack, line);
+    };
+    const up = () => {
+      stage.off("pointermove", move);
+      stage.off("pointerup", up);
+      stage.off("pointerupoutside", up);
+      if (moved) this.#setNodes(line, span, nodes);
+    };
+    stage.on("pointermove", move);
+    stage.on("pointerup", up);
+    stage.on("pointerupoutside", up);
+  }
+
+  /** Redraw one line's track in place (while a node is dragged). */
+  #redrawLine(g, line) {
+    const zoom = canvas.stage.scale.x || 1;
+    const at = new Map(this.net.stations.filter(isPlaced).map((s) => [s.id, s]));
+    g.clear();
+    line.segments.forEach((seg, i) => {
+      const a = at.get(line.stops[i]), b = at.get(line.stops[i + 1]);
+      if (!a || !b) return;
+      const pts = curvePoints(a, segmentNodes(seg, line.stops[i], line.stops[i + 1]), b);
+      g.lineStyle({ width: 5 / zoom, color: foundry.utils.Color.from(line.color).valueOf(), alpha: 0.95, cap: "round", join: "round" });
+      g.moveTo(pts[0].x, pts[0].y);
+      for (const p of pts.slice(1)) g.lineTo(p.x, p.y);
+    });
   }
 
   /**
@@ -121,6 +283,11 @@ export class StationLayer {
     this.container.alpha = alpha;
     this.container.visible = alpha > 0;
     this.container.eventMode = alpha > 0.2 ? "passive" : "none";
+    // Track widths and node handles keep their size on screen too.
+    if (this.editing && Math.abs((this.tracksZoom ?? 0) - zoom) > 1e-6) {
+      this.tracksZoom = zoom;
+      this.drawTracks();
+    }
   }
 
   #buildIcon(station, lines) {

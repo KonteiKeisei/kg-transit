@@ -9,6 +9,9 @@
       <button type="button" data-action="resetPreset" data-tooltip="Replace this network with the city's own, as it ran in the scene's year">
         <i class="fa-solid fa-rotate-left"></i> {{#if city.preset}}Reset to city network{{else}}Use city network{{/if}}
       </button>
+      {{#if city.canTrace}}
+        <button type="button" data-action="traceTracks" data-tooltip="Curve every line along the city's real track, as KG Cities draws it"><i class="fa-solid fa-bezier-curve"></i> Follow the tracks</button>
+      {{/if}}
     </div>
   {{else if scale.miles}}
     <div class="kgt-ed-scale"><i class="fa-solid fa-ruler-horizontal"></i> 1 square = {{scale.distance}} mi</div>
@@ -153,6 +156,10 @@
                 <input type="number" class="kgt-ed-minutes" data-field="minutes" data-index="{{index}}" value="{{segment.minutes}}" min="0" step="0.5"
                   placeholder="{{segment.auto}}" aria-label="Minutes to the next stop">
                 <span class="kgt-ed-muted">min{{#unless segment.minutes}}, from distance{{/unless}}</span>
+                {{#if segment.nodes}}
+                  <span class="kgt-ed-chip" data-tooltip="Travel nodes on the map: drag them, double-click the track to add one, double-click a node to remove it"><i class="fa-solid fa-bezier-curve"></i>{{segment.nodes}}</span>
+                  <button type="button" class="kgt-ed-icon" data-action="straighten" data-index="{{index}}" data-tooltip="Straighten: take this stretch's travel nodes out"><i class="fa-solid fa-ruler"></i></button>
+                {{/if}}
               </li>
             {{/if}}
           {{else}}

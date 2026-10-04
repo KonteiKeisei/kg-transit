@@ -1,5 +1,6 @@
-import { FLAGS, MODULE_ID, SETTINGS, saveNetwork, setting } from "./config.mjs";
-import { cityNetwork, presetLabel, readCityInfo } from "./cities.mjs";
+import { FLAGS, MODULE_ID, SETTINGS, saveNetwork, sceneNetwork, setting } from "./config.mjs";
+import { cityNetwork, presetLabel, readCityInfo, sceneProjection } from "./cities.mjs";
+import { traceTracks } from "./tracks.mjs";
 
 /** The KG Cities module, whose scenes are real cities. */
 export const CITIES_MODULE = "kg-cities";
@@ -42,7 +43,41 @@ export async function cityPreset(scene) {
   const pack = await loadPack(info.city);
   if (!pack) return null;
   const { net, reason } = cityNetwork(pack, info, scene.dimensions.sceneRect);
+  if (net.lines.length) await traceCityTracks(scene, net, { info, pack });
   return { info, net, reason, pack };
+}
+
+/**
+ * Curve a city network's lines along the real track KG Cities draws for the scene's city and
+ * era (its transit API), as travel nodes. Changes `net` in place and marks it traced; returns
+ * how many stretches follow the track (0 when KG Cities has no track to give).
+ */
+export async function traceCityTracks(scene, net, { info = sceneCity(scene), pack = null } = {}) {
+  if (!info || !net.preset) return 0;
+  pack ??= await loadPack(info.city);
+  const api = game.modules.get(CITIES_MODULE)?.api;
+  if (!pack || !api?.transit) return 0;
+  let transit = null;
+  try {
+    transit = await api.transit(info.city, info.era);
+  } catch (err) {
+    console.warn(`${MODULE_ID} | KG Cities had no track for ${info.city}`, err);
+  }
+  net.preset.tracks = 1;
+  if (!transit?.features?.length) return 0;
+  const rect = scene.dimensions.sceneRect;
+  const { project, pxPerMetre } = sceneProjection(pack, info, rect);
+  return traceTracks(net, transit, project, rect, pxPerMetre);
+}
+
+/** A city network set up before lines followed the track: trace it once (the active GM). */
+export async function traceOnce(scene) {
+  if (!scene || game.user !== game.users.activeGM) return false;
+  const net = sceneNetwork(scene);
+  if (!net.preset || net.preset.tracks || !net.lines.length) return false;
+  const traced = await traceCityTracks(scene, net);
+  await saveNetwork(scene, net);
+  return traced > 0;
 }
 
 /**

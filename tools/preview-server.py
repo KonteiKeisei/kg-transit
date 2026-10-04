@@ -38,6 +38,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         path = path.split("?", 1)[0].split("#", 1)[0]
         if path.startswith(PREFIX):
             return str(ROOT / path[len(PREFIX):])
+        # A neighbouring module (KG Cities, for its track data), from the folder beside this one.
+        parts = path.split("/")
+        if len(parts) > 3 and parts[1] == "modules" and parts[2] and ".." not in parts:
+            return str(ROOT.parent / parts[2] / "/".join(parts[3:]))
         return str(ROOT / "__missing__")
 
 

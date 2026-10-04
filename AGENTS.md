@@ -28,17 +28,20 @@ scripts/
   catalog.mjs               PURE. Train types (KINDS), cars (CARS), scenery (SCENERY), PLATFORMS
   themes.mjs                PURE. THEMES (modern, industrial, fantasy, future) and theme resolution
   cities.mjs                PURE. City packs to networks: era/year filtering, projection, KG Cities scene data
-  city-setup.mjs            Detects KG Cities scenes, loads packs, seeds scenes (auto on first view)
+  city-setup.mjs            Detects KG Cities scenes, loads packs, seeds scenes (auto on first view), traces their track (traceCityTracks, traceOnce)
+  route-path.mjs            PURE. Travel nodes: segment.path { from, to, nodes }, the Catmull-Rom curve through them, shapes and lengths
+  tracks.mjs                PURE. Traces a city network along KG Cities' OSM track (api.transit) into travel nodes
   network.mjs               PURE. Network shape, normalize(), routing (findTrip), timing, trips
-  timeline.mjs              PURE. Where the train is at any second (stateAt), map position (trainPoint)
+  timeline.mjs              PURE. Where the train is at any second (stateAt), distance along the track and map position (trainPoint)
   fare.mjs                  PURE. dnd5e coins: fare value, paying with change
   demo-network.mjs          PURE. The sample network; starterNetwork() seeds new scenes
   config.mjs                Module id, setting keys, scene flag helpers, map scale (kmPerPixel), clock text
   editor.mjs                Network editor (ApplicationV2 + templates/editor.hbs)
   board-dialog.mjs          Board dialog (ApplicationV2 + templates/board.hbs)
-  station-layer.mjs         PIXI station icons on the canvas, hover, double-click, drag, click-to-place
-  ride.mjs                  RideController: ride state, GM clock driving, fast-forward, arrival
-  follow.mjs                TokenTrain (moves tokens, GM only) and CameraFollow (every client)
+  station-layer.mjs         PIXI station icons on the canvas, hover, double-click, drag, click-to-place; while editing, the lines'
+                            track and the selected line's travel nodes (drag, double-click to add or remove)
+  ride.mjs                  RideController: ride state, GM clock driving, fast travel (ff: { from, to, ms, then }), skip, get off, arrive, emergency stop
+  follow.mjs                TokenTrain (tokens single file along the track, huddle on getting off; GM only), TokenBounce and CameraFollow (every client)
   overlay.mjs               The ride window: car interior, HUD, line strip, sound, car switching
   scenery.mjs               Wall renderer (perspective columns), texture cache, smoke, next car, sway
   scenery-art.mjs           Canvas drawing of every texture, per theme: near rows, far skylines, tunnels, platforms
@@ -47,10 +50,13 @@ scripts/
   airports.mjs              Loads data/airports.json; hands each city's airports to KG Cities (api.addLandmarks) to draw in violet
   flight-dialog.mjs         Flight booking (ApplicationV2 + templates/flight.hbs), opened by Hooks "kgCities.airport"
   flight.mjs                FlightController: world setting activeFlight, the GM's clock, skips (the clock only), the destination's weather halfway, destination scene, tokens, encounter, Continue flight
-  plane-show.mjs            Every client's flight screen: five scenes (departure terminal, jet bridge, flight, jet bridge,
-                            arrival terminal) filling the free canvas area (config.mjs canvasRect/safeArea, read from
-                            Foundry's own interface as Calendaria's HUD does), a fade to black between scenes, the cabin
-                            in its own subway-style window (cornerSpot), terminal ambiance and jets by scene
+  plane-show.mjs            Every client's flight screen: seven scenes (departure terminal, jet bridge, cabin taxiing
+                            out with the takeoff, flight, cabin taxiing in, jet bridge, arrival terminal) filling the free
+                            canvas area (config.mjs canvasRect/safeArea, read from Foundry's own interface as Calendaria's
+                            HUD does), a fade to black between scenes, the cabin in its own subway-style window in the air
+                            (cornerSpot), terminal ambiance and jets by scene (idle to full power while taxiing)
+  taxi-view.mjs             The airport out of the cabin windows in perspective (metres, a camera at the window seat
+                            turned forward), takeoffState / taxiInState motion, cabinFrame (the big window on screen)
   plane-lights.mjs          A plane's night lights: windows found in the art (small dark blobs in rows), beacons and
                             tail light from its outline, wingtip by hand per plane; darkness(hour) eases dusk and dawn
   sky.mjs                   Sky, clouds and weather on a 2D canvas, for the cabin windows and the flight screen
@@ -63,10 +69,10 @@ data/cities/index.json      Ids of the cities with packs
 tests/*.test.mjs            node --test; cover the PURE files and the token mover
 tools/
   preview.html              Runs the real ride window outside Foundry (stubs game, CALENDARIA)
-  icons-preview.html        Draws station icons with real PIXI on a mocked canvas (?theme=)
+  icons-preview.html        Draws station icons with real PIXI on a mocked canvas (?theme=; ?city=boston&trace=1&line=blue to edit traced nodes)
   themes-preview.html       Gallery of every theme's textures, drawn flat (?theme=&tod=&kinds=)
   editor-preview.html       The real network editor with Foundry stubbed (?theme= sets the world default)
-  preview-server.py         Serves the module at /modules/kg-transit/ for the previews (no cache)
+  preview-server.py         Serves the module at /modules/kg-transit/ (and neighbouring modules, for KG Cities' track) for the previews (no cache)
   key-interior.py           Keys green-screen windows out of interior source art
   package.py                Builds "dist/kg-transit v<version>.zip" (kg-transit/ at the top); never overwrites a built version
   build-airports.mjs        tools/airports/airports.json (the 1986 airports, their texts) to data/airports.json, outlines from OpenStreetMap

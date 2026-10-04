@@ -4,12 +4,14 @@
 //   { name, badge, theme, fare: { amount, coin }, transferMinutes, partyTokenId,
 //     cars: { <car>: { sound, interior } },    this network's own ride sound and car art (CARS keys)
 //     preset: { city, cityName, era, year, version } | null,   set when made from a city pack
-//     lines: [{ id, name, color, kind, theme, stops: [stationId], segments: [{ scenery, minutes }] }],
+//     lines: [{ id, name, color, kind, theme, stops: [stationId], segments: [{ scenery, minutes, path? }] }],
 //     stations: [{ id, name, x, y, theme, platform }] }    platform: auto | underground | above
-// segments[i] runs from stops[i] to stops[i + 1]. A station on more than one line is a transfer.
+// segments[i] runs from stops[i] to stops[i + 1], straight or curved through its path's travel nodes
+// (route-path.mjs). A station on more than one line is a transfer.
 // theme is null wherever it inherits (see themes.mjs).
 
 import { DEFAULT_SCENERY, KINDS, isTunnel } from "./catalog.mjs";
+import { cleanPath, segmentLength, segmentNodes } from "./route-path.mjs";
 import { DEFAULT_THEME, segmentTheme, stationTheme } from "./themes.mjs";
 
 const MIN_RUN = 45;
@@ -34,7 +36,14 @@ export function normalize(net) {
   n.lines = (n.lines ?? []).map((line) => {
     const stops = (line.stops ?? []).filter((id) => known.has(id));
     const segments = [];
-    for (let i = 0; i < stops.length - 1; i++) segments.push({ scenery: DEFAULT_SCENERY, minutes: null, ...(line.segments?.[i] ?? {}) });
+    for (let i = 0; i < stops.length - 1; i++) {
+      const seg = { scenery: DEFAULT_SCENERY, minutes: null, ...(line.segments?.[i] ?? {}) };
+      // A path drawn for another stretch (the stops were reordered or removed) is dropped.
+      const path = cleanPath(seg.path, stops[i], stops[i + 1]);
+      if (path) seg.path = path;
+      else delete seg.path;
+      segments.push(seg);
+    }
     return { name: "Line", color: "#d6312b", kind: "metro", theme: null, ...line, stops, segments };
   });
   return n;
@@ -67,8 +76,8 @@ export function lighten(hex, amount = 0.18) {
 
 /**
  * Running time between two adjacent stops on a line, in seconds, not counting the dwell:
- * the GM's minutes if set, otherwise the straight-line distance on the map at the line's
- * speed. `kmPerPx` converts map pixels to kilometres.
+ * the GM's minutes if set, otherwise the track's length on the map (straight, or along its
+ * travel nodes) at the line's speed. `kmPerPx` converts map pixels to kilometres.
  */
 export function runSeconds(net, line, index, kmPerPx) {
   const seg = line.segments[index];
@@ -76,7 +85,7 @@ export function runSeconds(net, line, index, kmPerPx) {
   const a = stationOf(net, line.stops[index]);
   const b = stationOf(net, line.stops[index + 1]);
   if (!isPlaced(a) || !isPlaced(b) || !kmPerPx) return DEFAULT_RUN;
-  const km = Math.hypot(a.x - b.x, a.y - b.y) * kmPerPx;
+  const km = segmentLength(a, b, segmentNodes(seg, line.stops[index], line.stops[index + 1])) * kmPerPx;
   return Math.max(MIN_RUN, Math.round((km / (KINDS[line.kind] ?? KINDS.metro).kmh) * 3600));
 }
 
@@ -241,7 +250,25 @@ export function buildTrip(net, legs, kmPerPx, worldTheme = DEFAULT_THEME) {
 /** Cut a trip short so it ends at the first stop reached at or after `elapsed`. */
 export function truncateTrip(trip, elapsed) {
   const index = trip.segments.findIndex((seg) => seg.arrive >= elapsed);
-  if (index < 0) return trip;
+  return index < 0 ? trip : endAfterSegment(trip, index);
+}
+
+/**
+ * The next stop the train reaches after `elapsed` (the one it stands at counts as reached):
+ * { index, arrive } of the segment ending there, or null at the end of the trip.
+ */
+export function nextStop(trip, elapsed) {
+  const index = trip.segments.findIndex((seg) => seg.arrive > elapsed + 0.5);
+  return index < 0 ? null : { index, arrive: trip.segments[index].arrive };
+}
+
+/** The stop the train stands at, as the index of the segment it arrived by, or -1 (moving or at the origin). */
+export function standingAt(trip, elapsed) {
+  return trip.segments.findIndex((seg, i) => seg.arrive <= elapsed && elapsed < (trip.segments[i + 1]?.depart ?? Infinity));
+}
+
+/** Cut a trip short so it ends with segment `index`. */
+export function endAfterSegment(trip, index) {
   const segments = trip.segments.slice(0, index + 1);
   const last = segments.at(-1);
   const usedLegs = new Set(segments.map((s) => s.legIndex));

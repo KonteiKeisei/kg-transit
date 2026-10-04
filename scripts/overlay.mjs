@@ -93,9 +93,10 @@ export class RideOverlay {
         </div>
         <div class="kgt-controls ${game.user.isGM ? "" : "player"}">
           ${game.user.isGM ? `
-          <button type="button" data-act="ff" data-tooltip="Fast-forward the rest of the trip over 10 seconds"><i class="fa-solid fa-forward"></i> Arrive</button>
-          <button type="button" data-act="off" data-tooltip="Get off at the next stop"><i class="fa-solid fa-person-walking-arrow-right"></i> Next stop</button>
-          <button type="button" data-act="end" data-tooltip="End the ride here, without moving time further"><i class="fa-solid fa-xmark"></i> End</button>` : ""}
+          <button type="button" data-act="skip" data-tooltip="Travel on to the next stop over 5 seconds, then ride on in real time"><i class="fa-solid fa-forward-step"></i> Skip to next stop</button>
+          <button type="button" data-act="off" data-tooltip="Get off here if the train is stopped, or travel on to the next stop over 5 seconds and get off there"><i class="fa-solid fa-person-walking-arrow-right"></i> Get off next stop</button>
+          <button type="button" data-act="ff" data-tooltip="Travel the rest of the way over 15 seconds"><i class="fa-solid fa-forward"></i> Arrive</button>
+          <button type="button" data-act="stop" class="danger" data-tooltip="Stop the train where it is and put everyone off there, ending the ride"><i class="fa-solid fa-hand"></i> Emergency stop</button>` : ""}
           <button type="button" data-act="size" data-tooltip="Full screen or window"><i class="fa-solid fa-expand"></i></button>
         </div>`;
       const stage = root.querySelector(".kgt-stage");
@@ -277,9 +278,10 @@ export class RideOverlay {
 
   #onControl(event) {
     const act = event.target.closest("[data-act]")?.dataset.act;
-    if (act === "ff") this.controller.fastForward();
+    if (act === "skip") this.controller.skipToNextStop();
     else if (act === "off") this.controller.getOffNextStop();
-    else if (act === "end") this.controller.endNow();
+    else if (act === "ff") this.controller.arrive();
+    else if (act === "stop") this.controller.emergencyStop();
     else if (act === "size") {
       this.expanded = !this.expanded;
       this.root.classList.toggle("expanded", this.expanded);

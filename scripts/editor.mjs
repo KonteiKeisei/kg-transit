@@ -1,9 +1,10 @@
 import { CARS, DEFAULT_SCENERY, KINDS, PLATFORMS, SCENERY, SUGGESTED_COLORS, isTunnel } from "./catalog.mjs";
 import { presetLabel } from "./cities.mjs";
-import { applyCityPreset, cityPreset, sceneCity } from "./city-setup.mjs";
+import { applyCityPreset, cityPreset, sceneCity, traceCityTracks } from "./city-setup.mjs";
 import { FLAGS, MODULE_ID, escapeHtml, kmPerPixel, saveNetwork, sceneNetwork, worldTheme } from "./config.mjs";
 import { COINS, fareValue, formatMoney } from "./fare.mjs";
 import { isPlaced, linesAt, newId, normalize, runSeconds } from "./network.mjs";
+import { segmentNodes } from "./route-path.mjs";
 import { THEMES, isTheme, pickTheme, themeChoices } from "./themes.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -37,6 +38,8 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
       toggleOnLine: NetworkEditor.#toggleOnLine,
       sceneTheme: NetworkEditor.#sceneTheme,
       resetPreset: NetworkEditor.#resetPreset,
+      traceTracks: NetworkEditor.#traceTracks,
+      straighten: NetworkEditor.#straighten,
       pickFile: NetworkEditor.#pickFile,
       sceneConfig: NetworkEditor.#sceneConfig,
       disable: NetworkEditor.#disable
@@ -123,6 +126,7 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
             label, options: options.map((o) => ({ ...o, selected: o.key === seg.scenery }))
           })),
           minutes: seg.minutes ?? "",
+          nodes: segmentNodes(seg, id, line.stops[i + 1]).length,
           auto: Math.max(1, Math.round(runSeconds(net, autoLine, i, kmPerPx) / 60))
         }
       };
@@ -140,6 +144,7 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
         label: net.preset ? presetLabel(net.preset) : `${this.city.city}, ${this.city.year}`,
         preset: !!net.preset,
         note: net.preset?.note ?? null,
+        canTrace: !!net.preset && !!game.modules.get("kg-cities")?.api?.transit,
         stations: net.stations.length
       },
       cars: Object.entries(CARS).map(([key, car]) => ({
@@ -186,14 +191,29 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
       Object.assign(station, { x, y });
       this.#commit();
     };
+    this.layer.onPath = (lineId, index, nodes) => {
+      const line = this.net.lines.find((l) => l.id === lineId);
+      const seg = line?.segments[index];
+      if (!seg) return;
+      if (nodes.length) seg.path = { from: line.stops[index], to: line.stops[index + 1], nodes: nodes.map((n) => ({ ...n })) };
+      else delete seg.path;
+      this.#commit();
+    };
+  }
+
+  _onRender(context, options) {
+    super._onRender(context, options);
+    this.layer.selectLine?.(this.lineId);
   }
 
   _onClose(options) {
     super._onClose(options);
     this.placing = false;
     this.layer.cancelPlacing();
+    this.layer.selectLine?.(null);
     this.layer.setEditing(false);
     this.layer.onMove = null;
+    this.layer.onPath = null;
   }
 
   /** Save and redraw after any change. */
@@ -311,6 +331,27 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
     this.openTransfer = null;
     if (preset.reason) ui.notifications.info(preset.reason);
     this.render();
+  }
+
+  /** Curve every line along the city's real track (KG Cities), replacing the travel nodes. */
+  static async #traceTracks() {
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: "Follow the tracks" },
+      content: "<p>Curve every line along the city's real track? Travel nodes you have moved or added are replaced.</p>"
+    });
+    if (!ok) return;
+    const traced = await traceCityTracks(this.scene, this.net);
+    this.#commit();
+    if (traced) ui.notifications.info(`KG Transit: ${traced} stretches now follow the track.`);
+    else ui.notifications.warn("KG Cities has no track for this city and era.");
+  }
+
+  /** Take a stretch's travel nodes out, so it runs straight. */
+  static #straighten(event, target) {
+    const seg = this.line?.segments[Number(target.dataset.index)];
+    if (!seg) return;
+    delete seg.path;
+    this.#commit();
   }
 
   /** Browse for a car's sound or interior image for this network. */

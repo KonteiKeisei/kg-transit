@@ -1,12 +1,16 @@
 import { MODULE_ID, SETTINGS, escapeHtml, formatClock, formatDuration, sceneNetwork, setting, stationPositions } from "./config.mjs";
 import { formatMoney } from "./fare.mjs";
-import { truncateTrip } from "./network.mjs";
-import { CameraFollow, TOKEN_STEP_FAST_MS, TOKEN_STEP_MS, TokenTrain } from "./follow.mjs";
+import { endAfterSegment, nextStop, standingAt, truncateTrip } from "./network.mjs";
+import { routeShapes } from "./route-path.mjs";
+import { trainPoint } from "./timeline.mjs";
+import { CameraFollow, TOKEN_STEP_FAST_MS, TOKEN_STEP_MS, TokenBounce, TokenTrain } from "./follow.mjs";
 import { RideOverlay } from "./overlay.mjs";
 
 /** World time is written in batches this often while riding (seconds). */
 const COMMIT_EVERY = 5;
-const FAST_FORWARD_MS = 10_000;
+/** How long the GM's fast travel takes (ms): to the next stop, and on to the end of the trip. */
+const SKIP_MS = 5_000;
+const ARRIVE_FF_MS = 15_000;
 /** Clients estimate the clock between writes, but never run further ahead than this. */
 const MAX_LEAD = COMMIT_EVERY + 1;
 
@@ -15,8 +19,9 @@ const ease = (p) => (p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2);
 /**
  * The ride lives in a world setting, so every client (including ones that join or reload
  * mid-ride) sees the same thing. Only the active GM moves world time: one game second per
- * real second, paused while the game is paused, or the rest of the trip over 10 seconds
- * when fast-forwarded.
+ * real second, paused while the game is paused. The GM can fast travel (ride.ff: { from, to,
+ * ms, then }): from one moment of the trip to another over `ms`, then carry on in real time
+ * ("ride") or get off ("finish").
  */
 export class RideController {
   constructor() {
@@ -32,6 +37,7 @@ export class RideController {
     this.shown = 0;
     this.tokens = new TokenTrain();
     this.camera = new CameraFollow();
+    this.bounce = new TokenBounce(this);
     this.lastTokenStep = 0;
   }
 
@@ -52,6 +58,8 @@ export class RideController {
     if (ride && ride.id !== this.ride?.id) this.camera.start(ride);
     else if (ride) this.camera.ride = ride;
     else if (this.ride) this.camera.end();
+    if (ride) this.bounce.start();
+    else this.bounce.stop();
     this.ride = ride;
     this.overlay.sync(ride);
     if (ride && this.isDriver) this.#startDriving();
@@ -63,10 +71,7 @@ export class RideController {
     const ride = this.ride;
     if (!ride) return 0;
     const total = ride.trip.total;
-    if (ride.ff) {
-      const p = Math.min(1, (now - (this.ffSeenAt ?? now)) / FAST_FORWARD_MS);
-      return ride.ff.from + (total - ride.ff.from) * ease(p);
-    }
+    if (ride.ff) return this.#ffTarget(ride.ff, now).at;
     const base = game.time.worldTime - ride.start;
     const lead = game.paused ? 0 : Math.min(MAX_LEAD, (now - this.worldSeenAt) / 1000);
     const estimate = Math.min(total, base + lead);
@@ -126,28 +131,67 @@ export class RideController {
 
   // ---- GM controls ----
 
-  async fastForward() {
-    const ride = this.ride;
-    if (!ride || ride.ff || !this.isDriver) return;
-    const from = Math.max(0, game.time.worldTime - ride.start);
-    await game.settings.set(MODULE_ID, SETTINGS.activeRide, { ...ride, ff: { from } });
+  /** Where a fast travel has got to: { at (elapsed seconds), done }. */
+  #ffTarget(ff, now = performance.now()) {
+    const p = Math.min(1, (now - (this.ffSeenAt ?? now)) / ff.ms);
+    return { at: ff.from + (ff.to - ff.from) * ease(p), done: p >= 1 };
   }
 
+  /** The trip seconds the GM's clock has reached, counting what is not yet written. */
+  #elapsedNow(ride = this.ride) {
+    return Math.max(0, game.time.worldTime - ride.start + this.pending);
+  }
+
+  /** Fast travel to `to` seconds into the trip over `ms`, then carry on ("ride") or get off ("finish"). */
+  async #fastTravel(ride, to, ms, then, { trip = ride.trip, early = false } = {}) {
+    const from = this.#elapsedNow(ride);
+    // What the clock owes is written first, so the fast travel starts from the world's time.
+    if (this.pending >= 1) await this.#advance(Math.floor(this.pending));
+    this.pending = 0;
+    await game.settings.set(MODULE_ID, SETTINGS.activeRide, { ...ride, trip, ff: { from, to: Math.max(from, to), ms, then, early } });
+  }
+
+  /** Skip to the next stop over 5 seconds, then ride on in real time. */
+  async skipToNextStop() {
+    const ride = this.ride;
+    if (!ride || ride.ff || !this.isDriver) return;
+    const next = nextStop(ride.trip, this.#elapsedNow(ride));
+    if (!next) return;
+    const last = next.index === ride.trip.segments.length - 1;
+    await this.#fastTravel(ride, next.arrive, SKIP_MS, last ? "finish" : "ride");
+  }
+
+  /** Get off at the stop the train stands at, or fast travel to the next one over 5 seconds and get off there. */
   async getOffNextStop() {
     const ride = this.ride;
     if (!ride || ride.ff || !this.isDriver) return;
-    const elapsed = Math.max(0, game.time.worldTime - ride.start + this.pending);
-    const trip = truncateTrip(ride.trip, elapsed);
-    if (trip.to === ride.trip.to) return;
+    const elapsed = this.#elapsedNow(ride);
+    const standing = standingAt(ride.trip, elapsed);
+    if (standing >= 0) return this.#finish(endAfterSegment(ride.trip, standing), { early: standing < ride.trip.segments.length - 1 });
+    const next = nextStop(ride.trip, elapsed);
+    if (!next) return;
+    const trip = endAfterSegment(ride.trip, next.index);
     ui.notifications.info(`Getting off at ${trip.names[trip.to]}.`);
-    await game.settings.set(MODULE_ID, SETTINGS.activeRide, { ...ride, trip });
+    await this.#fastTravel(ride, next.arrive, SKIP_MS, "finish", { trip, early: next.index < ride.trip.segments.length - 1 });
   }
 
-  async endNow() {
-    if (!this.ride || !this.isDriver) return;
-    // Ending early drops the riders at the stop they were at or heading for, without the time.
-    const elapsed = game.time.worldTime - this.ride.start;
-    await this.#finish(truncateTrip(this.ride.trip, elapsed), { early: true });
+  /** Fast travel the rest of the way over 15 seconds. */
+  async arrive() {
+    const ride = this.ride;
+    if (!ride || ride.ff || !this.isDriver) return;
+    await this.#fastTravel(ride, ride.trip.total, ARRIVE_FF_MS, "finish");
+  }
+
+  /** Stop the train where it is and put everyone off there, ending the ride (no more time passes). */
+  async emergencyStop() {
+    const ride = this.ride;
+    if (!ride || !this.isDriver) return;
+    const elapsed = ride.ff ? this.#ffTarget(ride.ff).at : this.#elapsedNow(ride);
+    if (elapsed - (game.time.worldTime - ride.start) >= 1) await this.#advance(Math.floor(elapsed - (game.time.worldTime - ride.start)));
+    const scene = game.scenes.get(ride.sceneId);
+    const net = sceneNetwork(scene);
+    const at = scene ? trainPoint(ride.trip, elapsed, stationPositions(net), routeShapes(net)) : null;
+    await this.#finish(truncateTrip(ride.trip, elapsed), { early: true, at });
   }
 
   // ---- driving the clock (active GM only) ----
@@ -178,11 +222,16 @@ export class RideController {
     this.busy = true;
     try {
       if (ride.ff) {
-        const p = Math.min(1, (now - (this.ffSeenAt ?? now)) / FAST_FORWARD_MS);
-        const target = ride.ff.from + (total - ride.ff.from) * ease(p);
-        if (p >= 1) {
-          await this.#advance(total - elapsed);
-          await this.#finish(ride.trip);
+        const { at: target, done } = this.#ffTarget(ride.ff, now);
+        if (done) {
+          await this.#advance(ride.ff.to - elapsed);
+          if (ride.ff.then === "finish") await this.#finish(ride.trip, { early: !!ride.ff.early });
+          else {
+            // Back to real time from the stop reached.
+            this.pending = 0;
+            this.lastTick = performance.now();
+            await game.settings.set(MODULE_ID, SETTINGS.activeRide, { ...ride, ff: null });
+          }
         } else {
           if (now - this.lastCommit >= 1000 && target - elapsed >= 1) {
             this.lastCommit = now;
@@ -214,28 +263,31 @@ export class RideController {
     if (seconds > 0) await game.time.advance(Math.round(seconds));
   }
 
-  async #finish(trip, { early = false } = {}) {
+  /** End the ride. `at`: an emergency stop's spot on the map, where everyone gets off instead of a stop. */
+  async #finish(trip, { early = false, at = null } = {}) {
     const ride = this.ride;
     if (!ride) return;
     this.#stopDriving();
     await game.settings.set(MODULE_ID, SETTINGS.activeRide, {});
-    await this.#moveTokens(ride, trip);
+    await this.#moveTokens(ride, trip, at);
     this.tokens.reset();
     if (ride.clockWasRunning) globalThis.CALENDARIA?.api?.startClock?.();
-    const to = trip.names[trip.to];
-    await this.#chat(`<div class="kg-transit-card"><h3><i class="fa-solid fa-train-subway"></i> ${early ? "Off" : "Arrived"} at ${escapeHtml(to)}</h3>
+    const to = escapeHtml(trip.names[trip.to]);
+    const title = at ? `Emergency stop before ${to}` : `${early ? "Off" : "Arrived"} at ${to}`;
+    await this.#chat(`<div class="kg-transit-card"><h3><i class="fa-solid fa-train-subway"></i> ${title}</h3>
       <p>${formatClock(game.time.worldTime)}.</p></div>`, ride);
-    Hooks.callAll(`${MODULE_ID}.rideEnd`, ride, { station: trip.to, early });
+    Hooks.callAll(`${MODULE_ID}.rideEnd`, ride, { station: at ? null : trip.to, early, emergency: !!at });
   }
 
-  /** Settle the ride's tokens on the stop where the trip ended. */
-  async #moveTokens(ride, trip) {
+  /** Put the ride's tokens off the train: gathered below the stop where the trip ended, or where it stopped. */
+  async #moveTokens(ride, trip, at = null) {
     const scene = game.scenes.get(ride.sceneId);
     if (!scene) return;
-    if (!stationPositions(sceneNetwork(scene))[trip.to]) {
+    if (!at && !stationPositions(sceneNetwork(scene))[trip.to]) {
       ui.notifications.info(`${trip.names[trip.to]} isn't placed on this map; the party stays where it is.`);
+      return;
     }
-    await this.tokens.step({ ...ride, trip }, trip.total, ARRIVE_MS);
+    await this.tokens.settle({ ...ride, trip }, trip, ARRIVE_MS, at);
   }
 
   /** Every so often, move the tokens to where the train is now (active GM only). */

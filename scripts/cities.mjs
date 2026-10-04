@@ -83,6 +83,15 @@ export function sceneBounds(pack, info) {
   return boxAround(area.center, area.miles);
 }
 
+/** Lat/lon to scene pixels for a city scene, and how many pixels a metre is there. */
+export function sceneProjection(pack, info, rect) {
+  const bounds = sceneBounds(pack, info);
+  const project = makeProjection(bounds, rect);
+  const lat = (bounds.north + bounds.south) / 2, lon = (bounds.west + bounds.east) / 2;
+  const a = project(lat, lon), b = project(lat + 1000 / 111320, lon);
+  return { project, pxPerMetre: Math.hypot(b.x - a.x, b.y - a.y) / 1000 };
+}
+
 /**
  * The network for a city scene in its year, ready to save on the scene, or a reason when
  * there is nothing to ride (no rail yet, or none inside the scene).

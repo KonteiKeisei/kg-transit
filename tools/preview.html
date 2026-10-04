@@ -54,7 +54,7 @@
   document.head.prepend(base);
 
   const { DEMO, KM_PER_PX } = await import("/modules/kg-transit/scripts/demo-network.mjs");
-  const { findTrip, normalize } = await import("/modules/kg-transit/scripts/network.mjs");
+  const { findTrip, nextStop, normalize, standingAt } = await import("/modules/kg-transit/scripts/network.mjs");
   const { RideOverlay } = await import("/modules/kg-transit/scripts/overlay.mjs");
 
   const trip = findTrip(normalize(DEMO), params.get("from") ?? "a", params.get("to") ?? "d", KM_PER_PX, settings.theme);
@@ -75,9 +75,11 @@
       readout.textContent = `${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, "0")} / ${Math.round(trip.total / 60)} min`;
       return elapsed;
     },
-    fastForward() { speed.value = String(Math.ceil((trip.total - elapsed) / 10)); },
-    getOffNextStop() {},
-    endNow() { overlay.sync(null); }
+    // The GM's buttons, roughly: jumps instead of the real 5 and 15 second fast travel.
+    skipToNextStop() { const next = nextStop(trip, elapsed); if (next) elapsed = next.arrive; },
+    getOffNextStop() { const next = nextStop(trip, elapsed); if (standingAt(trip, elapsed) < 0 && next) elapsed = next.arrive; setTimeout(() => overlay.sync(null), 600); },
+    arrive() { speed.value = String(Math.ceil((trip.total - elapsed) / 15)); },
+    emergencyStop() { overlay.sync(null); }
   };
   scrub.addEventListener("input", () => { elapsed = Number(scrub.value) * trip.total; });
 

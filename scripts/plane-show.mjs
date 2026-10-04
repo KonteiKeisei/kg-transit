@@ -1,9 +1,11 @@
 // What every client sees during a flight. The trip is five scenes, one after another:
 //
 //   departure terminal   curb to gate (and the wait at the gate)
-//   jet bridge           boarding, taxi and takeoff
+//   jet bridge           boarding
+//   cabin                taxiing out, the last 20 seconds the takeoff (the airport out of the windows)
 //   flight               in the air: the plane from the side, the cabin in a corner window
-//   jet bridge           taxi to the gate, off the plane
+//   cabin                the landing rollout and taxiing to the gate
+//   jet bridge           off the plane
 //   arrival terminal     baggage claim and leaving the airport
 //
 // A terminal is the airport's own: the tarmac out of its windows (by day or at dusk), the
@@ -17,8 +19,8 @@
 // its own, like the subway ride window: in the corner beside the sidebar, resizable, with an
 // expand button anyone can use to fill the screen and shrink it back.
 //
-// Sound: the terminal's ambiance in the terminals (quieter in the jet bridge), the jets only in
-// the air. The GM gets the controls: speed (the clock and the weather go faster, the plane and
+// Sound: the terminal's ambiance in the terminals (quieter in the jet bridge); the jets idling
+// in the cabin while it taxis, up to full power for the takeoff, and in the air. The GM gets the controls: speed (the clock and the weather go faster, the plane and
 // the clouds never do), and a skip to the next step, which only moves the clock.
 
 import { ASSET_PATH, MODULE_ID, SETTINGS, attachAboveCanvas, canvasRect, cornerSpot, escapeHtml, formatClock, safeArea } from "./config.mjs";
@@ -27,6 +29,7 @@ import { darkness, drawLights, readLights } from "./plane-lights.mjs";
 import { SkyPainter, turbulence } from "./sky.mjs";
 import { WeatherLayer, currentWeather, rideWeather } from "./weather.mjs";
 import { STAGE_SIZE } from "./scenery-art.mjs";
+import { TAKEOFF_SECONDS, TAXI_SPEED, TaxiView, takeoffState, taxiInState } from "./taxi-view.mjs";
 
 const FADE_MS = 900;
 const SOUND_FADE_MS = 2500;
@@ -48,8 +51,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const nextFrame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 const images = new Map();
 
-/** The scene of each step: "terminal" (the airport at that end), "bridge" or "flight". */
-const SCENE_OF = { curb: "terminal", board: "bridge", taxiOut: "bridge", air: "flight", taxiIn: "bridge", deplane: "bridge", claim: "terminal" };
+/** The scene of each step: "terminal" (the airport at that end), "bridge", "taxi" (the cabin) or "flight". */
+const SCENE_OF = { curb: "terminal", board: "bridge", taxiOut: "taxi", air: "flight", taxiIn: "taxi", deplane: "bridge", claim: "terminal" };
+const CABIN_ART = `${ASSET_PATH}/flight/cabin.webp`;
+/** Planes parked at the gates out of the cabin windows. */
+const GATE_PLANES = ["767", "747", "dc10", "a300"];
 
 /** An image by address, loaded once (null when missing). */
 function cachedImage(src) {
@@ -179,6 +185,7 @@ export class PlaneShow {
     this.sky?.set({ hour: this.hour, weather: this.weather });
     this.pipSky?.set({ hour: this.hour, weather: this.weather });
     this.groundWeather?.set(this.weather ?? rideWeather(null), tarmacLight(this.hour ?? 12).tod);
+    this.taxiView?.set({ hour: this.hour, weather: this.weather });
   }
 
   /** Show, update or end for the current flight (null when none). */
@@ -206,6 +213,7 @@ export class PlaneShow {
         <img class="kgt-ground-tarmac" alt=""><img class="kgt-ground-tarmac" alt=""><img class="kgt-ground-terminal" alt="">
         <img class="kgt-ground-bridge" alt="">
       </div></div>
+      <div class="kgt-flight-taxi"><canvas></canvas><img alt=""></div>
       <div class="kgt-flight-black" style="opacity:1"></div>
       <div class="kgt-flight-caption"></div>
       <div class="kgt-flight-clock"><span class="time"></span><span class="eta"></span></div>
@@ -215,6 +223,7 @@ export class PlaneShow {
     // Over the canvas, under Foundry's interface, sheets and other modules' HUDs.
     attachAboveCanvas(root);
     this.root = root;
+    this.#holdCanvas(true);
     this.placedFor = "";
     this.#place();
     this.canvas = root.querySelector(".kgt-flight-sky");
@@ -241,6 +250,16 @@ export class PlaneShow {
     this.terminal.before(this.groundWeather.canvas, this.groundWeather.fog);
     this.groundStage.append(this.groundWeather.flash);
     this.black = root.querySelector(".kgt-flight-black");
+    // The cabin while taxiing: the airport painted behind its windows.
+    this.taxiCanvas = root.querySelector(".kgt-flight-taxi canvas");
+    this.taxiArt = root.querySelector(".kgt-flight-taxi img");
+    this.taxiView = new TaxiView(this.taxiCanvas);
+    Promise.all(GATE_PLANES.map((a) => cachedImage(`${ASSET_PATH}/flight/${a}.webp`)))
+      .then((planes) => { if (this.taxiView) this.taxiView.planes = planes.filter(Boolean); });
+    this.taxiStep = null;
+    this.bump = 0;
+    this.bumpV = 0;
+    this.nextBump = 0;
     // undefined: nothing decided yet, so the first read always lifts the black.
     this.sceneAt = undefined;
     this.sceneJob = null;
@@ -248,6 +267,7 @@ export class PlaneShow {
     this.groundSize = "";
     // Every scene's art, ready before it is needed.
     cachedImage(JET_BRIDGE);
+    cachedImage(CABIN_ART);
     for (const code of [f.from.iata, f.to.iata]) for (const layer of ["terminal", "day", "dusk"]) cachedImage(terminalArt(code, layer));
     root.querySelector(".kgt-flight-controls").addEventListener("click", (e) => this.#onControl(e));
     this.hour = game.time.calendar?.timeToComponents?.(game.time.worldTime)?.hour ?? 12;
@@ -370,6 +390,8 @@ export class PlaneShow {
       this.setWeather(f.destWeather && elapsed >= midFlight(f.plan) ? f.destWeather : currentWeather());
     }
     const { step, left } = stepAt(f.plan, elapsed);
+    // Where the taxiing is, for the takeoff and the rollout between reads.
+    this.taxiStep = { key: step.key, left, total: step.minutes * 60, rate: f.rate ?? 1, at: now, running: f.phase === "flying" && !game.paused };
     this.root.querySelector(".kgt-flight-clock .time").textContent = formatClock(world);
     this.root.querySelector(".kgt-flight-clock .eta").textContent =
       `${f.phase === "landed" ? "Arrived" : `Arrives ${formatClock((f.start ?? world) + total)}`}${(f.rate ?? 1) > 1 ? `, ×${f.rate}` : ""}`;
@@ -394,7 +416,7 @@ export class PlaneShow {
   }
 
   /**
-   * Change scene: "terminal:<CODE>", "bridge" or "flight". Changes queue up and run one at a time
+   * Change scene: "terminal:<CODE>", "bridge", "taxi" or "flight". Changes queue up and run one at a time
    * (#changeScene), so a fade is never cut short; asking for the scene already showing does nothing.
    */
   #setScene(scene) {
@@ -415,7 +437,7 @@ export class PlaneShow {
     const root = this.root;
     if (!root || this.sceneAt !== key) return;
     // Everything the next scene needs, loaded before anything changes on screen.
-    let terminal = null, tarmac = null, bridge = null;
+    let terminal = null, tarmac = null, bridge = null, cabin = null;
     if (scene.startsWith("terminal:")) {
       const code = scene.slice(9);
       [terminal, tarmac] = await Promise.all([cachedImage(terminalArt(code, "terminal")), cachedImage(terminalArt(code, plate))]);
@@ -425,6 +447,10 @@ export class PlaneShow {
     if (scene === "bridge") {
       bridge = await cachedImage(JET_BRIDGE);
       if (!bridge) scene = "flight";
+    }
+    if (scene === "taxi") {
+      cabin = await cachedImage(CABIN_ART);
+      if (!cabin) scene = "flight";
     }
     if (scene === "flight") await this.platePromise;
     if (this.root !== root || this.sceneAt !== key) return;
@@ -440,14 +466,16 @@ export class PlaneShow {
         this.#showTarmac(tarmac.src, false);
       }
       if (bridge) this.bridge.src = bridge.src;
+      if (cabin) this.taxiArt.src = cabin.src;
       this.scene = scene;
-      root.classList.toggle("on-ground", scene !== "flight");
+      root.classList.toggle("on-ground", scene !== "flight" && scene !== "taxi");
       root.classList.toggle("in-bridge", scene === "bridge");
+      root.classList.toggle("in-taxi", scene === "taxi");
       // The cabin window in the air only.
       this.pip?.classList.toggle("shown", scene === "flight");
       this.#mixSound();
       // Decoded and painted before the black lifts.
-      const shown = bridge ? [this.bridge] : terminal ? [this.terminal, ...this.tarmacs] : [];
+      const shown = bridge ? [this.bridge] : cabin ? [this.taxiArt] : terminal ? [this.terminal, ...this.tarmacs] : [];
       await Promise.all(shown.filter((img) => img.getAttribute("src")).map((img) => img.decode().catch(() => {})));
       await nextFrame();
       if (this.root !== root || this.sceneAt !== key) return;
@@ -493,6 +521,7 @@ export class PlaneShow {
     const w = Math.round(this.root.clientWidth), h = Math.round(this.root.clientHeight);
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     this.#fitGround(w, h);
+    if (this.scene === "taxi") return this.#drawTaxi(now, dt, w, h);
     const onGround = this.scene && this.scene !== "flight";
     // Rain and snow past the terminal windows: the plane is parked, so it falls straight.
     if (onGround && this.scene !== "bridge") this.groundWeather.update(now, dt, 0, 1);
@@ -544,6 +573,49 @@ export class PlaneShow {
     }
   }
 
+  /** How the plane moves while taxiing: the takeoff at the end of taxiing out, the rollout at the start of taxiing in. */
+  #taxiState(now) {
+    const s = this.taxiStep;
+    if (!s || (s.key !== "taxiOut" && s.key !== "taxiIn")) return takeoffState(-1);
+    // The step's seconds left now, counted on from the last read at the GM's speed.
+    const left = Math.max(0, s.left - (s.running ? ((now - s.at) / 1000) * s.rate : 0));
+    // In real seconds, so the takeoff lasts its 20 seconds whatever the speed.
+    if (s.key === "taxiOut") return takeoffState(TAKEOFF_SECONDS - left / s.rate);
+    return taxiInState((s.total - left) / s.rate, left / s.rate);
+  }
+
+  /** The cabin full screen, the airport going by outside; bumps on the taxiway, the rumble of the takeoff roll. */
+  #drawTaxi(now, dt, w, h) {
+    const c = this.taxiCanvas;
+    if (!c || !this.taxiView) return;
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    const state = this.#taxiState(now);
+    this.taxiView.draw(now, dt, state);
+    // A bump at each joint in the taxiway; rattling once the plane is fast; smooth once it flies.
+    const ground = 1 - Math.min(1, state.climb * 6);
+    if (now > this.nextBump && ground > 0) {
+      this.bumpV -= (60 + 160 * Math.min(1, state.speed / 40)) * ground;
+      this.nextBump = now + Math.max(90, 1300 / Math.max(1, state.speed / TAXI_SPEED));
+    }
+    this.bumpV += (-this.bump * 180 - this.bumpV * 14) * dt;
+    this.bump += this.bumpV * dt;
+    const rattle = ground * Math.min(1, state.speed / 70) * (Math.random() - 0.5) * 2.4;
+    const k = h / 1000;
+    this.taxiArt.style.transform = `translateY(${((this.bump + rattle) * k).toFixed(2)}px) scale(1.03)`;
+    // The cabin lights are turned down for a takeoff or landing after dark.
+    const dim = this.dark ?? 0;
+    this.taxiArt.style.filter = dim > 0.01 ? `brightness(${(1 - 0.45 * dim).toFixed(3)}) saturate(${(1 - 0.2 * dim).toFixed(3)})` : "";
+    // The engines: idling, spooling up for the takeoff.
+    if (now - (this.powerAt ?? 0) > 400) {
+      this.powerAt = now;
+      const level = (this.volume ?? 0.8) * state.power;
+      if (Math.abs(level - (this.jetLevel ?? -1)) > 0.02) {
+        this.jetLevel = level;
+        this.sound?.fade?.(level, { duration: 450 });
+      }
+    }
+  }
+
   #land() {
     if (this.landing || !this.root) return;
     this.landing = true;
@@ -581,7 +653,9 @@ export class PlaneShow {
     try { ambience = Number(game.settings.get(MODULE_ID, SETTINGS.terminalVolume)); } catch { /* not registered (previews) */ }
     if (!Number.isFinite(ambience)) ambience = 0.5;
     const scene = this.scene ?? "";
-    const jets = scene === "flight" ? v : 0;
+    // Taxiing, the engines follow the plane (#drawTaxi); they start at idle.
+    const jets = scene === "flight" ? v : scene === "taxi" ? v * 0.25 : 0;
+    this.jetLevel = jets;
     const terminal = scene.startsWith("terminal:") ? ambience : scene === "bridge" ? ambience * BRIDGE_AMBIENCE : 0;
     this.sound?.fade?.(jets, { duration: SOUND_FADE_MS });
     this.ambience?.fade?.(terminal, { duration: SOUND_FADE_MS });
@@ -621,7 +695,37 @@ export class PlaneShow {
       this.root = null;
       this.canvas = null;
       this.pipCanvas = null;
+      this.taxiView = null;
+      this.taxiCanvas = null;
+      this.#holdCanvas(false);
     }
     root?.remove();
+  }
+
+  /**
+   * While the flight is on screen the scene under it is out of reach: the cover takes the clicks
+   * and the wheel, and the canvas stops reacting to the pointer (PIXI hears pointer moves from the
+   * whole page, so hovers such as KG Cities' landmark cards would still fire through the cover).
+   * A scene drawn meanwhile (the destination) is held too; the canvas is given back at the end.
+   */
+  #holdCanvas(on) {
+    document.body.classList.toggle("kgt-flying", on);
+    if (on) {
+      this.root?.addEventListener("wheel", (event) => event.stopPropagation(), { passive: true });
+      this.root?.addEventListener("contextmenu", (event) => event.preventDefault());
+      const hold = () => {
+        const stage = globalThis.canvas?.stage;
+        if (!stage || stage.eventMode === "none") return;
+        this.stageMode = stage.eventMode;
+        stage.eventMode = "none";
+      };
+      hold();
+      this.holdHook ??= globalThis.Hooks?.on("canvasReady", hold);
+    } else {
+      if (this.holdHook) Hooks.off("canvasReady", this.holdHook);
+      this.holdHook = null;
+      if (this.stageMode && globalThis.canvas?.stage) globalThis.canvas.stage.eventMode = this.stageMode;
+      this.stageMode = null;
+    }
   }
 }

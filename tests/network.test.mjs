@@ -99,3 +99,18 @@ test("a new scene starts with the sample network, every stop waiting to be place
 test("lighten makes a paler shade", () => {
   assert.equal(lighten("#000000", 0.5), "#808080");
 });
+
+test("the next stop and the stop the train stands at", async () => {
+  const { nextStop, standingAt, endAfterSegment } = await import("../scripts/network.mjs");
+  const trip = { from: "a", to: "c", legs: [{ lineId: "l", stops: ["a", "b", "c"] }], transfers: [], names: {}, total: 230,
+    segments: [{ legIndex: 0, from: "a", to: "b", depart: 0, arrive: 100 }, { legIndex: 0, from: "b", to: "c", depart: 130, arrive: 230 }] };
+  assert.deepEqual(nextStop(trip, 10), { index: 0, arrive: 100 });
+  assert.deepEqual(nextStop(trip, 110), { index: 1, arrive: 230 });
+  assert.equal(nextStop(trip, 230), null);
+  assert.equal(standingAt(trip, 50), -1);
+  assert.equal(standingAt(trip, 115), 0);
+  assert.equal(standingAt(trip, 150), -1);
+  const off = endAfterSegment(trip, 0);
+  assert.equal(off.to, "b");
+  assert.equal(off.total, 100);
+});
