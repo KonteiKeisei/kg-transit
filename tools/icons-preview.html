@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transit Icons Preview</title>
+<link rel="stylesheet" href="../styles/transit.css">
+<style>body { margin: 0; background: #2b2f33; }</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.4.2/pixi.min.js"></script>
+</head>
+<body>
+<!-- Draws the demo network's stations with the real StationLayer on a mocked canvas. ?size=40&zoom=0.2&theme=modern
+     ?city=boston&era=1980s|modern&year=1986: a city network over its metro area, with its lines -->
+<!-- Icon size defaults to 40 px; try size=10 for a dense city. -->
+<script type="module">
+  const params = new URLSearchParams(location.search);
+  const app = new PIXI.Application({ width: innerWidth, height: innerHeight, background: 0x2b2f33, antialias: true });
+  document.body.append(app.view);
+  const world = new PIXI.Container();
+  world.scale.set(Number(params.get("zoom") ?? 0.18));
+  app.stage.addChild(world);
+  app.stage.eventMode = "static";
+  app.stage.hitArea = app.screen;
+
+  const { DEMO } = await import("/modules/kg-transit/scripts/demo-network.mjs");
+  let network = DEMO;
+  // ?city=new-york&era=modern: a city network over the whole metro, scaled to fit the window.
+  const city = params.get("city");
+  if (city) {
+    const { cityNetwork } = await import("/modules/kg-transit/scripts/cities.mjs");
+    const pack = await (await fetch(`/modules/kg-transit/data/cities/${city}.json`)).json();
+    const rect = { x: 0, y: 0, width: 40000, height: Math.round(40000 * (pack.metro.miles[1] / pack.metro.miles[0])) };
+    network = cityNetwork(pack, { city, era: params.get("era") ?? "modern", year: Number(params.get("year")) || (params.get("era") === "1980s" ? 1986 : 2026), extent: "metro" }, rect).net;
+    world.scale.set((innerWidth || 800) / rect.width);
+    // Lines drawn under the icons, so the routes can be checked against the real map.
+    const g = new PIXI.Graphics();
+    const at = Object.fromEntries(network.stations.map((s) => [s.id, s]));
+    for (const line of network.lines) {
+      g.lineStyle(60, parseInt(line.color.slice(1), 16), 0.9);
+      line.stops.forEach((id, i) => (i ? g.lineTo(at[id].x, at[id].y) : g.moveTo(at[id].x, at[id].y)));
+    }
+    world.addChild(g);
+    window.network = network;
+  }
+  const scene = { getFlag: (_m, key) => (key === "enabled" ? true : key === "network" ? network : undefined) };
+  globalThis.canvas = { scene, interface: world, stage: world, app };
+  globalThis.game = { settings: { get: (_m, key) => ({ iconSize: Number(params.get("size") ?? 40), theme: params.get("theme") ?? "modern" })[key] }, user: { isGM: true } };
+  globalThis.foundry = { utils: { Color: { from: (hex) => ({ valueOf: () => parseInt(hex.slice(1), 16) }) } } };
+
+  const { StationLayer } = await import("/modules/kg-transit/scripts/station-layer.mjs");
+  const layer = new StationLayer();
+  layer.onBoard = (id) => console.log("board", id);
+  layer.draw();
+  if (city) layer.setEditing(true);
+  window.layer = layer;
+</script>
+</body>
+</html>

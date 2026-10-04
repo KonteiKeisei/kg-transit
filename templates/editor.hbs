@@ -1,0 +1,178 @@
+<div class="kgt-ed">
+  {{#if city}}
+    <div class="kgt-ed-city">
+      <i class="fa-solid fa-city"></i>
+      <div>
+        {{#if city.preset}}<strong>{{city.label}}</strong>: the city's real network, set up from map data.{{else}}<strong>A KG Cities scene</strong> ({{city.label}}).{{/if}}
+        {{#if city.note}}<span class="kgt-ed-muted">{{city.note}}</span>{{/if}}
+      </div>
+      <button type="button" data-action="resetPreset" data-tooltip="Replace this network with the city's own, as it ran in the scene's year">
+        <i class="fa-solid fa-rotate-left"></i> {{#if city.preset}}Reset to city network{{else}}Use city network{{/if}}
+      </button>
+    </div>
+  {{else if scale.miles}}
+    <div class="kgt-ed-scale"><i class="fa-solid fa-ruler-horizontal"></i> 1 square = {{scale.distance}} mi</div>
+  {{else}}
+    <div class="kgt-ed-warning">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <div>
+        <strong>Set the scene's scale before placing stops.</strong>
+        Travel times come from map distance, and this scene's grid is in <em>{{scale.units}}</em>.
+        In the scene's settings, set Grid Units to <strong>mi</strong> and Grid Scale to the miles one square covers.
+      </div>
+      <button type="button" data-action="sceneConfig"><i class="fa-solid fa-map"></i> Scene settings</button>
+    </div>
+  {{/if}}
+
+  <button type="button" class="kgt-ed-netbar" data-action="toggleNetwork" aria-expanded="{{netOpen}}">
+    <i class="fa-solid fa-gear"></i>
+    <span class="kgt-ed-netsum"><strong>{{net.name}}</strong> · badge {{net.badge}} · fare {{fareText}} · transfers {{net.transferMinutes}} min · {{sceneThemeLabel}} theme · party: {{partyLabel}}</span>
+    <i class="fa-solid {{#if netOpen}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i>
+  </button>
+  {{#if netOpen}}
+    <div class="kgt-ed-netpanel">
+      <label class="kgt-ed-wide">Name <input type="text" data-field="name" value="{{net.name}}"></label>
+      <label data-tooltip="Letters on the station icons">Badge <input type="text" data-field="badge" value="{{net.badge}}" maxlength="2" class="kgt-ed-badge"></label>
+      <label>Fare
+        <span class="kgt-ed-pair">
+          <input type="number" data-field="fareAmount" value="{{net.fare.amount}}" min="0" step="1">
+          <select data-field="fareCoin">{{#each coins}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+        </span>
+      </label>
+      <label data-tooltip="Minutes to change trains at a transfer station">Transfer
+        <span class="kgt-ed-pair"><input type="number" data-field="transfer" value="{{net.transferMinutes}}" min="0" step="1"> min</span>
+      </label>
+      <label class="kgt-ed-wide" data-tooltip="Optional. This token rides the line on the map, and its members are ticked as riders.">Party token
+        <select data-field="partyToken">
+          <option value="">None, use the tokens at the station</option>
+          {{#each partyTokens}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}{{#if group}} (party){{/if}}</option>{{/each}}
+        </select>
+      </label>
+      {{#each cars}}
+        <div class="kgt-ed-car kgt-ed-full">
+          <span class="kgt-ed-carname">{{label}}</span>
+          <label data-tooltip="Loops during rides in this car on this network. Empty uses the module setting.">Sound
+            <span class="kgt-ed-pair">
+              <input type="text" data-field="carSound" data-car="{{key}}" value="{{sound}}" placeholder="Module setting">
+              <button type="button" class="kgt-ed-icon" data-action="pickFile" data-car="{{key}}" data-kind="audio" aria-label="Browse"><i class="fa-solid fa-file-audio"></i></button>
+            </span>
+          </label>
+          <label data-tooltip="This network's own car art (1672 x 941, transparent windows). Empty uses the module setting.">Interior
+            <span class="kgt-ed-pair">
+              <input type="text" data-field="carInterior" data-car="{{key}}" value="{{interior}}" placeholder="Module setting">
+              <button type="button" class="kgt-ed-icon" data-action="pickFile" data-car="{{key}}" data-kind="image" aria-label="Browse"><i class="fa-solid fa-file-image"></i></button>
+            </span>
+          </label>
+        </div>
+      {{/each}}
+      {{#if partyMissing}}<p class="kgt-ed-error">The chosen party token is no longer on this scene.</p>{{/if}}
+      <div class="kgt-ed-netfoot">
+        <button type="button" data-action="disable"><i class="fa-solid fa-power-off"></i> Turn off on this scene</button>
+      </div>
+    </div>
+  {{/if}}
+
+  <div class="kgt-ed-themes" role="radiogroup" aria-label="Theme for this scene">
+    <span class="kgt-ed-themes-label">Theme</span>
+    {{#each sceneThemes}}
+      <button type="button" class="kgt-ed-theme {{#if active}}active{{/if}}" data-action="sceneTheme" data-theme="{{key}}"
+        role="radio" aria-checked="{{active}}" data-tooltip="{{hint}}"><i class="fa-solid {{glyph}}"></i> {{label}}</button>
+    {{/each}}
+  </div>
+
+  <div class="kgt-ed-body">
+    <nav class="kgt-ed-rail">
+      {{#each lines}}
+        <button type="button" class="kgt-ed-linebtn {{#if active}}active{{/if}}" data-action="selectLine" data-line="{{id}}">
+          <span class="kgt-ed-swatchbar" style="background:{{color}}"></span>
+          <span class="kgt-ed-lineinfo">
+            <span class="kgt-ed-linename">{{name}}</span>
+            <span class="kgt-ed-linesub">{{kind}} · {{placed}} of {{stops}} placed{{#if theme}} · <i class="fa-solid {{theme.glyph}}" data-tooltip="{{theme.label}} theme"></i>{{/if}}</span>
+          </span>
+        </button>
+      {{/each}}
+      <button type="button" class="kgt-ed-linebtn kgt-ed-newline" data-action="addLine"><i class="fa-solid fa-plus"></i> New line</button>
+    </nav>
+
+    <section class="kgt-ed-main">
+      {{#if line}}
+        <div class="kgt-ed-linehead">
+          <input type="text" class="kgt-ed-linetitle" data-field="lineName" value="{{line.name}}" aria-label="Line name">
+          <input type="color" class="kgt-ed-color" data-field="lineColor" value="{{line.color}}" data-tooltip="Line colour">
+          <select data-field="lineKind" class="kgt-ed-kind" aria-label="Train type">{{#each line.kinds}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+          <select data-field="lineTheme" class="kgt-ed-kind kgt-ed-linetheme" aria-label="Line theme" data-tooltip="Theme for this line">{{#each line.themes}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+          <button type="button" class="kgt-ed-icon" data-action="deleteLine" data-tooltip="Delete this line"><i class="fa-solid fa-trash"></i></button>
+        </div>
+
+        <ol class="kgt-ed-route" style="--line:{{line.color}}">
+          {{#each stops}}
+            <li class="kgt-ed-stop {{#if @first}}first{{/if}} {{#if @last}}last{{/if}}" data-station="{{id}}" data-index="{{index}}">
+              <span class="kgt-ed-node {{#unless placed}}unplaced{{/unless}}"></span>
+              <i class="fa-solid fa-grip-vertical kgt-ed-grip" data-tooltip="Drag to reorder"></i>
+              <input type="text" class="kgt-ed-stopname" data-field="stationName" data-station="{{id}}" value="{{name}}" aria-label="Stop name">
+              {{#each transferLines}}<span class="kgt-ed-chip"><span class="kgt-ed-dot" style="background:{{color}}"></span>{{name}}</span>{{/each}}
+              {{#if theme}}<span class="kgt-ed-chip" data-tooltip="Theme for this stop"><i class="fa-solid {{theme.glyph}}"></i>{{theme.label}}</span>{{/if}}
+              {{#if platformChip}}<span class="kgt-ed-chip" data-tooltip="Platform"><i class="fa-solid fa-person-shelter"></i>{{platformChip}}</span>{{/if}}
+              <button type="button" class="kgt-ed-icon {{#if placed}}placed{{else}}unplaced{{/if}}" data-action="place"
+                data-tooltip="{{#if placed}}Move on the map{{else}}Place on the map{{/if}}"><i class="fa-solid {{#if placed}}fa-location-dot{{else}}fa-crosshairs{{/if}}"></i></button>
+              <button type="button" class="kgt-ed-icon {{#if transferOpen}}open{{/if}}" data-action="toggleTransfer" data-tooltip="Stop options: transfers, theme, platform"><i class="fa-solid fa-sliders"></i></button>
+              <button type="button" class="kgt-ed-icon" data-action="removeStop" data-tooltip="Remove from this line"><i class="fa-solid fa-xmark"></i></button>
+            </li>
+            {{#if transferOpen}}
+              <li class="kgt-ed-xfer {{#if @last}}last{{/if}}">
+                <div class="kgt-ed-xferbox">
+                  <span class="kgt-ed-muted">Also on</span>
+                  {{#each otherLines}}
+                    <button type="button" class="kgt-ed-toggle {{#if checked}}on{{/if}}" data-action="toggleOnLine" data-line="{{id}}" data-station="{{../id}}">
+                      <span class="kgt-ed-dot" style="background:{{color}}"></span>{{name}}
+                    </button>
+                  {{else}}
+                    <span class="kgt-ed-muted">Add another line first.</span>
+                  {{/each}}
+                </div>
+                <div class="kgt-ed-stopopts">
+                  <label data-tooltip="The platform here and the track either side of it">Theme
+                    <select data-field="stationTheme" data-station="{{id}}">{{#each themes}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+                  </label>
+                  <label data-tooltip="Auto is underground where a tunnel reaches the stop, above ground otherwise">Platform
+                    <select data-field="stationPlatform" data-station="{{id}}">{{#each platforms}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+                  </label>
+                </div>
+              </li>
+            {{/if}}
+            {{#if segment}}
+              <li class="kgt-ed-seg">
+                <span class="kgt-ed-scenery">
+                  <i class="fa-solid {{segment.icon}}"></i>
+                  <select data-field="scenery" data-index="{{index}}" aria-label="Scenery to the next stop">
+                    {{#each segment.groups}}
+                      <optgroup label="{{label}}">{{#each options}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</optgroup>
+                    {{/each}}
+                  </select>
+                </span>
+                <input type="number" class="kgt-ed-minutes" data-field="minutes" data-index="{{index}}" value="{{segment.minutes}}" min="0" step="0.5"
+                  placeholder="{{segment.auto}}" aria-label="Minutes to the next stop">
+                <span class="kgt-ed-muted">min{{#unless segment.minutes}}, from distance{{/unless}}</span>
+              </li>
+            {{/if}}
+          {{else}}
+            <li class="kgt-ed-empty">No stops yet. Add the first one below.</li>
+          {{/each}}
+        </ol>
+        <button type="button" class="kgt-ed-add" data-action="addStop"><i class="fa-solid fa-plus"></i> Add stop</button>
+      {{else}}
+        <p class="kgt-ed-empty">Add a line to start.</p>
+      {{/if}}
+    </section>
+  </div>
+
+  <footer class="kgt-ed-foot">
+    <span>{{progress.placed}} of {{progress.total}} stops on the map</span>
+    <span class="kgt-ed-progress"><span style="width:{{progress.percent}}%"></span></span>
+    {{#if progress.next}}
+      <button type="button" data-action="placeNext" data-tooltip="Click each stop onto the map in turn. Esc or right-click stops."><i class="fa-solid fa-location-dot"></i> Place next: {{progress.next}}</button>
+    {{else}}
+      <span class="kgt-ed-done"><i class="fa-solid fa-check"></i> All placed</span>
+    {{/if}}
+  </footer>
+</div>

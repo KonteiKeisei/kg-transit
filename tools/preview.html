@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transit Ride Preview</title>
+<link rel="stylesheet" href="../styles/transit.css">
+<style>
+  body { margin: 0; background: #222; font-family: Helvetica, Arial, sans-serif; color: #eee; }
+  #panel {
+    position: fixed; z-index: 10000; left: 50%; top: 60px; transform: translateX(-50%); display: flex; gap: 6px; align-items: center;
+    background: rgba(0,0,0,0.8); padding: 6px 10px; border-radius: 6px; font-size: 12px;
+  }
+  #panel input[type=range] { width: 200px; }
+</style>
+</head>
+<body>
+<!-- Runs the real ride overlay outside Foundry on the demo network. URL options:
+     ?from=a&to=l&speed=1&hour=14&month=6&weather=clear&theme=modern&t=0
+     Stop ids: see tools/demo-network.mjs. -->
+<div id="panel">
+  <span id="readout"></span>
+  <input id="scrub" type="range" min="0" max="1" step="0.001" value="0">
+  <label>speed <input id="speed" type="number" value="1" min="0" step="1" style="width:4em"></label>
+  <select id="weather">
+    <option>clear</option><option>partly-cloudy</option><option>cloudy</option><option>overcast</option>
+    <option>fog</option><option>drizzle</option><option>rain</option><option>thunderstorm</option>
+    <option>snow</option><option>blizzard</option>
+  </select>
+</div>
+<script type="module">
+  const params = new URLSearchParams(location.search);
+  const startHour = Number(params.get("hour") ?? 14);
+  const settings = {
+    iconSize: 26, loopVolume: 0.8, showRideToAll: true,
+    subwaySound: "", steamSound: "", subwayInterior: "", steamInterior: "", theme: params.get("theme") ?? "modern"
+  };
+  globalThis.game = {
+    settings: { get: (_m, key) => settings[key] },
+    user: { isGM: true, id: "gm" },
+    paused: false,
+    time: {
+      worldTime: startHour * 3600,
+      calendar: { timeToComponents: (t) => ({ hour: Math.floor(t / 3600) % 24, minute: Math.floor(t / 60) % 60, month: Number(params.get("month") ?? 6) }) }
+    }
+  };
+  const weatherSelect = document.getElementById("weather");
+  weatherSelect.value = params.get("weather") ?? "clear";
+  globalThis.CALENDARIA = { api: { getCurrentWeather: () => ({ id: weatherSelect.value }) } };
+  globalThis.foundry = { audio: { AudioHelper: { play: async () => null } } };
+
+  const base = document.createElement("base");
+  base.href = "/";
+  document.head.prepend(base);
+
+  const { DEMO, KM_PER_PX } = await import("/modules/kg-transit/scripts/demo-network.mjs");
+  const { findTrip, normalize } = await import("/modules/kg-transit/scripts/network.mjs");
+  const { RideOverlay } = await import("/modules/kg-transit/scripts/overlay.mjs");
+
+  const trip = findTrip(normalize(DEMO), params.get("from") ?? "a", params.get("to") ?? "d", KM_PER_PX, settings.theme);
+  let elapsed = Number(params.get("t") ?? 0);
+  let last = performance.now();
+  const speed = document.getElementById("speed");
+  speed.value = params.get("speed") ?? "1";
+  const scrub = document.getElementById("scrub");
+  const readout = document.getElementById("readout");
+
+  const controller = {
+    displayElapsed(now) {
+      const dt = (now - last) / 1000;
+      last = now;
+      elapsed = Math.min(trip.total, elapsed + dt * Number(speed.value || 0));
+      game.time.worldTime = startHour * 3600 + elapsed;
+      scrub.value = String(elapsed / trip.total);
+      readout.textContent = `${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, "0")} / ${Math.round(trip.total / 60)} min`;
+      return elapsed;
+    },
+    fastForward() { speed.value = String(Math.ceil((trip.total - elapsed) / 10)); },
+    getOffNextStop() {},
+    endNow() { overlay.sync(null); }
+  };
+  scrub.addEventListener("input", () => { elapsed = Number(scrub.value) * trip.total; });
+
+  const overlay = new RideOverlay(controller);
+  overlay.sync({ id: "preview", trip, start: startHour * 3600, viewers: [], showToAll: true, networkName: DEMO.name });
+  overlay.root?.classList.add("expanded");
+  window.overlay = overlay;
+  window.trip = trip;
+</script>
+</body>
+</html>

@@ -1,0 +1,1050 @@
+/* ---------- shared ---------- */
+
+.kg-transit-dot {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-right: 0.3em;
+  border-radius: 2px;
+  background: var(--line);
+  vertical-align: baseline;
+}
+
+/* ---------- map tooltip ---------- */
+
+.kg-transit-tooltip {
+  position: fixed;
+  z-index: 1000;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(10, 10, 12, 0.92);
+  color: #fff;
+  font: 600 14px/1.2 Helvetica, Arial, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+.kg-transit-tooltip .lines {
+  font-weight: 400;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* ---------- board dialog ---------- */
+
+.kg-transit-board .kg-transit-board-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.kg-transit-board .origin .lines { font-size: 0.95em; }
+.kg-transit-board .riders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.kg-transit-board .riders li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.kg-transit-board .riders label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+.kg-transit-board .riders img {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  object-fit: cover;
+}
+.kg-transit-board .riders .cash { font-variant-numeric: tabular-nums; opacity: 0.85; }
+.kg-transit-board .riders .waive { flex: 0 0 auto; width: auto; padding: 0 8px; line-height: 22px; }
+.kg-transit-board .short, .kg-transit-board .short .cash { color: #e5534b; opacity: 1; }
+.kg-transit-board .waived .cash { text-decoration: line-through; }
+.kg-transit-board .route {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.kg-transit-board .route li {
+  display: flex;
+  flex-direction: column;
+  padding: 3px 0 3px 10px;
+  border-left: 5px solid var(--line);
+  margin-bottom: 3px;
+}
+.kg-transit-board .route .leg-label { font-weight: 600; }
+.kg-transit-board .route .leg-stops { font-size: 0.9em; opacity: 0.85; }
+.kg-transit-board .eta { margin: 6px 0 0; }
+.kg-transit-board .choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0;
+}
+.kg-transit-board .choice > span { min-width: 110px; opacity: 0.85; }
+.kg-transit-board .choice label { display: flex; align-items: center; gap: 4px; }
+
+/* ---------- chat card ---------- */
+
+.kg-transit-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  border: none;
+}
+.kg-transit-card .legs {
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+.kg-transit-card .legs li {
+  padding-left: 8px;
+  border-left: 4px solid var(--line);
+  margin-bottom: 2px;
+}
+.kg-transit-card p { margin: 2px 0; }
+.kg-transit-card .fare { font-size: 0.9em; opacity: 0.85; }
+
+/* ---------- the ride ---------- */
+
+#kg-transit-ride {
+  --line: #d6312b;
+  --strip: #e05a50;
+  position: fixed;
+  z-index: 9000;
+  color: #fff;
+  font-family: Helvetica, Arial, sans-serif;
+}
+#kg-transit-ride.mode-window.expanded {
+  inset: 0;
+  background: #000;
+}
+#kg-transit-ride.mode-window:not(.expanded) {
+  right: 320px;
+  bottom: 16px;
+  width: 640px;
+  height: 380px;
+  min-width: 360px;
+  min-height: 220px;
+  resize: both;
+  overflow: hidden;
+  border: 2px solid #222;
+  border-radius: 8px;
+  background: #000;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7);
+}
+
+.kgt-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.kgt-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.kgt-stage > * {
+  position: absolute;
+  inset: 0;
+  translate: var(--sway-x, 0) var(--sway-y, 0);
+  rotate: var(--roll, 0deg);
+  /* Slightly oversized so the rocking never shows an edge. */
+  scale: 1.03;
+  transform-origin: 50% 85%;
+}
+.kgt-stage > .kgt-world {
+  overflow: hidden;
+}
+.kgt-interior {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  user-select: none;
+}
+.kgt-stripmap {
+  background: var(--strip);
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  transition: background-color 1.2s ease;
+}
+
+.kgt-backdrop {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.9s ease;
+}
+/* Weather: rain or snow and fog over the scenery, lightning over everything. */
+.kgt-walls, .kgt-weather, .kgt-fog {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.kgt-fog { opacity: 0; }
+.kgt-flash {
+  pointer-events: none;
+  background: #eef2ff;
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+/* Light from passing tunnel lamps, sweeping outward over the interior. */
+.kgt-sweep {
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+.kgt-sweep.left {
+  background: radial-gradient(ellipse 22% 60% at 50% 40%, rgba(255, 228, 170, 0.9), rgba(255, 228, 170, 0) 70%);
+}
+.kgt-sweep.right {
+  background: radial-gradient(ellipse 22% 60% at 50% 40%, rgba(255, 228, 170, 0.9), rgba(255, 228, 170, 0) 70%);
+}
+
+/* The theme's wash over the car, masked to the car art (windows stay clear). */
+.kgt-tint {
+  pointer-events: none;
+  mask-size: 100% 100%;
+  -webkit-mask-size: 100% 100%;
+  background: var(--kgt-tint, transparent);
+  mix-blend-mode: var(--kgt-tint-blend, normal);
+  opacity: var(--kgt-tint-alpha, 0);
+  transition: opacity 1.5s ease;
+}
+#kg-transit-ride.theme-industrial {
+  --kgt-tint: #7a5230;
+  --kgt-tint-blend: color;
+  --kgt-tint-alpha: 0.45;
+}
+#kg-transit-ride.theme-fantasy {
+  --kgt-tint: radial-gradient(ellipse 70% 60% at 50% 35%, #ffb347, #8a4b12);
+  --kgt-tint-blend: soft-light;
+  --kgt-tint-alpha: 0.7;
+}
+#kg-transit-ride.theme-future {
+  --kgt-tint: linear-gradient(100deg, #00e1ff 0%, #2b3cff 50%, #ff2bd6 100%);
+  --kgt-tint-blend: soft-light;
+  --kgt-tint-alpha: 0.65;
+}
+
+/* ---------- HUD ---------- */
+
+.kgt-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 28px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+.mode-window:not(.expanded) .kgt-hud {
+  padding: 8px 12px 44px;
+  font-size: 11px;
+}
+.kgt-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.kgt-leg, .kgt-clock, .kgt-bottom {
+  background: rgba(0, 0, 0, 0.62);
+  border-radius: 8px;
+  padding: 8px 14px;
+}
+.kgt-leg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.35em;
+  font-weight: 700;
+}
+.kgt-badge {
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 25%;
+  background: var(--line);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.kgt-badge::after {
+  content: "";
+  width: 0.95em;
+  height: 0.95em;
+  border-radius: 50%;
+  background: #fff;
+  color: #111;
+  font: 900 0.7em/0.95em Helvetica, Arial, sans-serif;
+  text-align: center;
+  text-shadow: none;
+  display: grid;
+  place-items: center;
+}
+.kgt-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.kgt-time {
+  font-size: 1.7em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.kgt-eta { opacity: 0.85; }
+.kgt-status {
+  font-size: 1.3em;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.kgt-line .track {
+  position: relative;
+  height: 34px;
+  margin: 0 12px 18px;
+}
+.kgt-line .bar {
+  position: absolute;
+  top: 12px;
+  height: 8px;
+  background: var(--line);
+}
+.kgt-line .stop {
+  position: absolute;
+  top: 9px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #333;
+  pointer-events: auto;
+}
+.kgt-line .stop.passed { background: #999; }
+.kgt-line .stop.next { background: #fff; box-shadow: 0 0 0 3px #fff8; }
+.kgt-line .stop.key { width: 18px; height: 18px; margin-left: -9px; top: 7px; }
+.kgt-line .stop .name {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+.kgt-line .stop:first-of-type .name { left: 0; transform: none; }
+.kgt-line .train {
+  position: absolute;
+  top: 4px;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  border-radius: 6px;
+  background: var(--line);
+  border: 3px solid #fff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+/* HUD per theme. Industrial: brass and enamel, a printed timetable face. */
+.theme-industrial .kgt-hud {
+  font-family: Georgia, "Times New Roman", serif;
+  color: #f4e6c4;
+}
+.theme-industrial .kgt-leg, .theme-industrial .kgt-clock, .theme-industrial .kgt-bottom {
+  background: linear-gradient(#2b1d12e6, #1a110be6);
+  border: 2px solid #b08a4a;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px #00000080, 0 2px 6px #0008;
+}
+.theme-industrial .kgt-leg, .theme-industrial .kgt-status { font-variant: small-caps; letter-spacing: 0.04em; }
+.theme-industrial .kgt-line .stop { border-color: #b08a4a; background: #f4e6c4; }
+.theme-industrial .kgt-line .train { border-color: #d8b26a; border-radius: 3px; }
+
+/* Fantasy: parchment and ink, wrought-iron edges. */
+.theme-fantasy .kgt-hud {
+  font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  color: #2a1a0c;
+  text-shadow: none;
+}
+.theme-fantasy .kgt-leg, .theme-fantasy .kgt-clock, .theme-fantasy .kgt-bottom {
+  background: radial-gradient(ellipse at 50% 40%, #f3e2bdf0, #d9bf8cf0);
+  border: 2px solid #4a3220;
+  border-radius: 6px 14px 6px 14px;
+  box-shadow: inset 0 0 18px #7a4f2266, 0 3px 8px #000a;
+}
+.theme-fantasy .kgt-time { font-style: italic; }
+.theme-fantasy .kgt-line .bar { box-shadow: 0 0 0 1px #4a3220; }
+.theme-fantasy .kgt-line .stop { border-color: #4a3220; background: #f3e2bd; }
+.theme-fantasy .kgt-line .stop.passed { background: #a08a64; }
+.theme-fantasy .kgt-line .train { border-color: #4a3220; border-radius: 50%; }
+
+/* Future: neon on glass, monospace readouts. */
+.theme-future .kgt-hud {
+  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+  color: #e8fbff;
+  text-shadow: 0 0 6px #00e1ffaa;
+}
+.theme-future .kgt-leg, .theme-future .kgt-clock, .theme-future .kgt-bottom {
+  background: linear-gradient(135deg, #061224d0, #1a0626d0);
+  border: 1px solid #00e1ff;
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  box-shadow: inset 0 0 14px #00e1ff44;
+  backdrop-filter: blur(3px);
+}
+.theme-future .kgt-time { color: #ff6be6; text-shadow: 0 0 8px #ff2bd6; }
+.theme-future .kgt-line .bar { box-shadow: 0 0 8px var(--line); }
+.theme-future .kgt-line .stop { border-color: #00e1ff; background: #061224; border-radius: 2px; }
+.theme-future .kgt-line .stop.passed { background: #00e1ff66; }
+.theme-future .kgt-line .stop.next { box-shadow: 0 0 10px 3px #00e1ff; }
+.theme-future .kgt-line .train { border-color: #e8fbff; border-radius: 2px; box-shadow: 0 0 14px var(--line); }
+
+/* ---------- GM controls ---------- */
+
+.kgt-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.75);
+}
+#kg-transit-ride.expanded .kgt-controls {
+  left: auto;
+  right: 16px;
+  bottom: auto;
+  top: 110px;
+  border-radius: 8px;
+}
+.kgt-controls button {
+  flex: 1;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  line-height: 26px;
+  cursor: pointer;
+}
+.kgt-controls button[data-act="size"] { flex: 0 0 36px; }
+.kgt-controls button:hover { background: rgba(255, 255, 255, 0.25); }
+/* Players only get the expand button, in the corner of the window. */
+#kg-transit-ride:not(.expanded) .kgt-controls.player {
+  left: auto;
+  right: 6px;
+  bottom: 6px;
+  padding: 0;
+  background: none;
+}
+
+/* ---------- banner for players not riding ---------- */
+
+#kg-transit-ride.mode-banner {
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.kgt-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgba(10, 10, 12, 0.88);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+}
+
+/* ---------- network editor ----------
+   Theme-neutral: tints are grey or the line colour at low alpha, muted text is currentColor
+   mixed toward transparent, so it reads in Foundry's dark and light themes. */
+
+.kg-transit-editor .window-content { padding: 0; }
+.kgt-ed {
+  --ed-tint: rgb(127 127 127 / 0.12);
+  --ed-tint-strong: rgb(127 127 127 / 0.22);
+  --ed-rule: rgb(127 127 127 / 0.28);
+  --ed-muted: color-mix(in srgb, currentColor 60%, transparent);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  font-size: 13px;
+}
+.kgt-ed button { width: auto; flex: 0 0 auto; }
+.kgt-ed-muted { color: var(--ed-muted); }
+
+/* Open dropdown lists (editor and Board dialog). The selects take Foundry's light dark-theme
+   text, but the native list kept the browser's white background, so options were unreadable.
+   Match the list's colour scheme and colours to the theme (dark is Foundry's default). */
+.kg-transit-editor select, .kg-transit-board select {
+  --kgt-opt-bg: #1f1f23;
+  --kgt-opt-fg: #e6e6e6;
+  color-scheme: dark;
+}
+.theme-light .kg-transit-editor select, .theme-light .kg-transit-board select {
+  --kgt-opt-bg: #ffffff;
+  --kgt-opt-fg: #1b1b1b;
+  color-scheme: light;
+}
+.kg-transit-editor.theme-dark select, .kg-transit-board.theme-dark select {
+  --kgt-opt-bg: #1f1f23;
+  --kgt-opt-fg: #e6e6e6;
+  color-scheme: dark;
+}
+.kg-transit-editor.theme-light select, .kg-transit-board.theme-light select {
+  --kgt-opt-bg: #ffffff;
+  --kgt-opt-fg: #1b1b1b;
+  color-scheme: light;
+}
+.kg-transit-editor select option, .kg-transit-editor select optgroup,
+.kg-transit-board select option, .kg-transit-board select optgroup {
+  background-color: var(--kgt-opt-bg);
+  color: var(--kgt-opt-fg);
+}
+
+/* Scale and its warning. */
+.kgt-ed-scale {
+  align-self: flex-end;
+  margin: 6px 12px 0;
+  padding: 2px 8px;
+  border: 1px solid var(--ed-rule);
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--ed-muted);
+}
+.kgt-ed-warning {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgb(230 160 40 / 0.16);
+  border: 1px solid rgb(230 160 40 / 0.6);
+  line-height: 1.4;
+}
+.kgt-ed-warning > i { color: #e6a028; margin-top: 3px; }
+.kgt-ed-warning > div { flex: 1; }
+.kgt-ed-warning button { align-self: center; padding: 0 10px; }
+
+/* Network summary and its panel. */
+.kgt-ed-netbar {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 12px 0;
+  padding: 6px 10px;
+  border: none;
+  border-bottom: 1px solid var(--ed-rule);
+  border-radius: 0;
+  background: none;
+  text-align: left;
+  color: var(--ed-muted);
+  line-height: 1.4;
+}
+.kgt-ed-netbar:hover { background: var(--ed-tint); }
+.kgt-ed-netsum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kgt-ed-netbar strong { color: var(--color-text-primary, currentColor); font-weight: 600; }
+.kgt-ed-netpanel {
+  display: grid;
+  grid-template-columns: 2fr 70px 1fr 1fr;
+  gap: 8px;
+  margin: 0 12px;
+  padding: 10px;
+  background: var(--ed-tint);
+  border-radius: 0 0 6px 6px;
+}
+.kgt-ed-netpanel label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ed-muted); }
+.kgt-ed-netpanel input, .kgt-ed-netpanel select { color: var(--color-text-primary, inherit); }
+.kgt-ed-netpanel .kgt-ed-wide { grid-column: span 2; }
+.kgt-ed-pair { display: flex; gap: 4px; align-items: center; }
+.kgt-ed-pair input[type="number"] { width: 4em; }
+.kgt-ed-badge { text-align: center; font-weight: 700; }
+.kgt-ed-netfoot { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+.kgt-ed-netfoot button { padding: 0 10px; }
+.kgt-ed-error { grid-column: 1 / -1; margin: 0; color: #e5534b; }
+
+/* Lines on the left, the selected line's route on the right. */
+.kgt-ed-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  margin-top: 8px;
+  border-top: 1px solid var(--ed-rule);
+}
+.kgt-ed-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-right: 1px solid var(--ed-rule);
+  overflow-y: auto;
+}
+.kgt-ed-linebtn {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  width: 100% !important;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  line-height: 1.3;
+}
+.kgt-ed-linebtn:hover { background: var(--ed-tint); }
+.kgt-ed-linebtn.active { background: var(--ed-tint-strong); }
+.kgt-ed-swatchbar { width: 4px; height: 30px; border-radius: 2px; flex: none; }
+.kgt-ed-lineinfo { display: flex; flex-direction: column; min-width: 0; }
+.kgt-ed-linename { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kgt-ed-linesub { font-size: 11px; color: var(--ed-muted); }
+.kgt-ed-newline { color: var(--ed-muted); gap: 6px; }
+
+.kgt-ed-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px 12px;
+}
+.kgt-ed-linehead { display: flex; gap: 8px; align-items: center; }
+.kgt-ed-linetitle { flex: 1; font-size: 15px; font-weight: 600; }
+.kgt-ed-color {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid var(--ed-rule);
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  flex: none;
+}
+.kgt-ed-color::-webkit-color-swatch-wrapper { padding: 0; }
+.kgt-ed-color::-webkit-color-swatch { border: none; border-radius: 50%; }
+.kgt-ed-kind { width: 112px; flex: none; }
+.kgt-ed-kind.kgt-ed-linetheme { width: 140px; }
+.kgt-ed-icon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 28px !important;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ed-muted);
+}
+.kgt-ed-icon:hover { background: var(--ed-tint); color: inherit; }
+.kgt-ed-icon.unplaced { color: #4a9eff; }
+.kgt-ed-icon.placed { color: #4caf50; }
+.kgt-ed-icon.open { background: var(--ed-tint-strong); color: inherit; }
+
+/* The route: a track in the line colour with a node per stop. */
+.kgt-ed-route {
+  position: relative;
+  list-style: none;
+  margin: 10px 0 6px;
+  padding: 0 0 0 26px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* Each row carries its piece of track, from the first stop's node to the last one's. */
+.kgt-ed-route > li { position: relative; margin: 0; padding: 0; }
+.kgt-ed-route > li:not(.kgt-ed-empty)::before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--line);
+}
+.kgt-ed-route > .kgt-ed-stop.first::before { top: 50%; }
+.kgt-ed-route > .kgt-ed-stop.last::before { bottom: 50%; }
+.kgt-ed-route > .kgt-ed-stop.first.last::before { display: none; }
+.kgt-ed-route > .kgt-ed-xfer.last::before { display: none; }
+.kgt-ed-stop { display: flex; align-items: center; gap: 4px; min-height: 34px; border-radius: 6px; }
+.kgt-ed-stop.dragging { opacity: 0.4; }
+.kgt-ed-stop.drop { box-shadow: inset 0 2px 0 var(--line); }
+.kgt-ed-node {
+  position: absolute;
+  left: -23px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--line);
+  background: var(--color-bg, #1a1a1a);
+  box-sizing: border-box;
+}
+/* Not on the map yet: a faded, hollow ring. */
+.kgt-ed-node.unplaced { border-color: color-mix(in srgb, var(--line) 45%, transparent); background: var(--color-bg, #1a1a1a); }
+.kgt-ed-grip { color: var(--ed-muted); cursor: grab; padding: 0 2px; }
+.kgt-ed-stopname {
+  flex: 1;
+  min-width: 80px;
+  height: 28px;
+  border: 1px solid transparent !important;
+  background: none !important;
+  box-shadow: none !important;
+  font-size: 14px;
+}
+.kgt-ed-stopname:hover { background: var(--ed-tint) !important; }
+.kgt-ed-stopname:focus { border-color: var(--ed-rule) !important; background: var(--ed-tint) !important; }
+.kgt-ed-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border: 1px solid var(--ed-rule);
+  border-radius: 10px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--ed-muted);
+}
+.kgt-ed-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+
+.kgt-ed-xfer { padding: 0 0 6px 18px !important; }
+.kgt-ed-xferbox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--ed-tint);
+  border-radius: 6px;
+}
+.kgt-ed-toggle {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border: 1px solid var(--ed-rule);
+  border-radius: 12px;
+  background: none;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.kgt-ed-toggle.on { background: var(--ed-tint-strong); border-color: currentColor; font-weight: 600; }
+.kgt-ed-xfer .kgt-ed-xferbox { border-radius: 6px 6px 0 0; }
+.kgt-ed-stopopts {
+  display: flex;
+  gap: 10px;
+  padding: 0 10px 8px;
+  background: var(--ed-tint);
+  border-radius: 0 0 6px 6px;
+}
+.kgt-ed-stopopts label { flex: 1; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ed-muted); }
+.kgt-ed-stopopts select { color: var(--color-text-primary, inherit); }
+
+/* KG Cities scenes: which city and year the network is, with a reset. */
+.kgt-ed-city {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--ed-tint);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.kgt-ed-city > i { font-size: 16px; opacity: 0.8; }
+.kgt-ed-city > div { flex: 1; min-width: 0; }
+.kgt-ed-city .kgt-ed-muted { display: block; }
+.kgt-ed-city button { flex: none; width: auto !important; white-space: nowrap; padding: 0 10px; }
+/* Per-network car sound and art, one row per car. */
+.kgt-ed-netpanel .kgt-ed-full { grid-column: 1 / -1; }
+.kgt-ed-car { display: grid; grid-template-columns: 90px 1fr 1fr; gap: 8px; align-items: end; }
+.kgt-ed-carname { font-size: 12px; font-weight: 600; padding-bottom: 6px; }
+.kgt-ed-car .kgt-ed-pair input { flex: 1; min-width: 0; }
+
+/* The master theme picker for the scene. */
+.kgt-ed-themes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 12px 0;
+  flex-wrap: wrap;
+}
+.kgt-ed-themes-label { font-size: 12px; color: var(--ed-muted); margin-right: 2px; }
+.kgt-ed-theme {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  width: auto !important;
+  flex: 1 1 auto;
+  justify-content: center;
+  padding: 3px 10px;
+  border: 1px solid var(--ed-rule);
+  border-radius: 14px;
+  background: none;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+.kgt-ed-theme:hover { background: var(--ed-tint); }
+.kgt-ed-theme.active { background: var(--ed-tint-strong); border-color: currentColor; font-weight: 600; }
+
+.kgt-ed-seg { display: flex; align-items: center; gap: 8px; min-height: 32px; padding-left: 18px !important; }
+.kgt-ed-scenery {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 10px;
+  border-radius: 14px;
+  background: var(--ed-tint);
+}
+.kgt-ed-scenery select {
+  width: auto;
+  height: 26px;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  font-size: 12px;
+}
+.kgt-ed-minutes { width: 4.5em; height: 26px; }
+.kgt-ed-empty { color: var(--ed-muted); padding: 10px 0; }
+.kgt-ed-add { align-self: flex-start; padding: 0 12px; }
+
+/* Placement progress. */
+.kgt-ed-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--ed-rule);
+}
+.kgt-ed-progress { flex: 1; height: 6px; border-radius: 3px; background: var(--ed-tint-strong); overflow: hidden; }
+.kgt-ed-progress > span { display: block; height: 100%; background: #4caf50; }
+.kgt-ed-foot button { padding: 0 12px; }
+.kgt-ed-done { color: #4caf50; }
+
+/* ---------------------------------------- */
+/*  Flights                                  */
+/* ---------------------------------------- */
+
+/* In flight: the cabin in a small window in the corner, the sky going by its portholes. */
+#kg-transit-flight .kgt-flight-pip {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  width: min(30vw, 400px);
+  aspect-ratio: 1589 / 990;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+}
+#kg-transit-flight .kgt-flight-pip canvas,
+#kg-transit-flight .kgt-flight-pip img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+#kg-transit-flight .kgt-flight-pip img { object-fit: cover; transform-origin: 50% 60%; }
+/* On the ground: the airport terminal full screen (tarmac, weather, terminal), still, and no
+   cabin window. Views swap under the black (plane-show.mjs), so they cut rather than fade. */
+#kg-transit-flight.on-ground .kgt-flight-pip { display: none; }
+#kg-transit-flight.on-ground .kgt-flight-status { max-width: calc(100% - 44px); }
+#kg-transit-flight .kgt-flight-ground {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: none;
+  background: #000;
+}
+#kg-transit-flight.on-ground .kgt-flight-ground { display: block; }
+#kg-transit-flight .kgt-ground-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1672px;
+  height: 941px;
+  transform-origin: 0 0;
+}
+#kg-transit-flight .kgt-ground-stage > * { position: absolute; inset: 0; width: 100%; height: 100%; }
+#kg-transit-flight .kgt-ground-tarmac {
+  object-fit: cover;
+  opacity: 0;
+  /* Day into dusk at the same airport cross-fades slowly; the weather dims it the same way. */
+  transition: opacity 3s ease, filter 4s ease;
+}
+#kg-transit-flight .kgt-ground-tarmac.on { opacity: 1; }
+#kg-transit-flight .kgt-flight-ground.cut .kgt-ground-tarmac { transition: none; }
+#kg-transit-flight .kgt-ground-terminal { object-fit: cover; }
+/* The jet bridge (boarding, getting off): over the terminal's layers, no weather in it. */
+#kg-transit-flight .kgt-ground-bridge { object-fit: cover; display: none; }
+#kg-transit-flight.in-bridge .kgt-ground-bridge { display: block; }
+#kg-transit-flight.in-bridge .kgt-flash { display: none; }
+/* Every change between terminal and flight dips through this (and the screen opens from it). */
+#kg-transit-flight .kgt-flight-black {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  transition: opacity 0.7s ease;
+}
+.kg-transit-booking legend { display: flex; align-items: center; gap: 10px; width: 100%; }
+.kg-transit-booking .kgt-party-button {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: auto;
+  line-height: 24px;
+  padding: 0 10px;
+  font-size: 0.9em;
+}
+.kg-transit-booking .kgt-bags { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.kg-transit-booking .kgt-flight-line { margin: 8px 0 4px; }
+.kg-transit-booking .kgt-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.kg-transit-booking .kgt-steps li {
+  display: grid;
+  grid-template-columns: 9.5em 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 6px 3px 10px;
+  border-left: 3px solid #8a68e8;
+  font-size: 0.92em;
+}
+.kg-transit-booking .kgt-steps li.where-air { border-left-color: #4a90e2; background: rgba(74, 144, 226, 0.08); }
+.kg-transit-booking .kgt-steps li.where-destination { border-left-color: #3fb08f; }
+.kg-transit-booking .kgt-steps .step-label { font-weight: 600; }
+.kg-transit-booking .kgt-steps .step-detail { opacity: 0.8; min-width: 0; }
+.kg-transit-booking .kgt-steps .step-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kg-transit-booking .hint { margin: 6px 0 0; font-size: 0.85em; opacity: 0.75; }
+
+/* In flight: over Calendaria's cinematic (z-index 10000), clicks pass through to it. */
+#kg-transit-flight {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  pointer-events: none;
+}
+#kg-transit-flight canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#kg-transit-flight .kgt-flight-caption {
+  position: absolute;
+  top: 18px;
+  left: 22px;
+  display: grid;
+  gap: 2px;
+  color: #fff;
+  font: 600 1.15rem var(--font-primary, Signika, sans-serif);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+#kg-transit-flight .kgt-flight-caption span { font-weight: 400; font-size: 0.85em; opacity: 0.85; }
+#kg-transit-flight .kgt-flight-status {
+  position: absolute;
+  left: 22px;
+  bottom: 24px;
+  max-width: calc(100% - min(30vw, 400px) - 70px);
+  color: #fff;
+  font: 400 1.2rem var(--font-primary, Signika, sans-serif);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+.kgt-flight-card h3 i { color: #8a68e8; }
+
+/* The GM's Continue flight button, while an encounter interrupts a flight. */
+#kg-transit-continue {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  width: auto;
+  padding: 8px 18px;
+  border: 1px solid #b195ff;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5b3fc4, #3b2687);
+  color: #fff;
+  font: 600 15px var(--font-primary, Signika, sans-serif);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+#kg-transit-continue:hover { background: linear-gradient(180deg, #6a4dd6, #4a309f); }
+.kg-transit-booking .kgt-encounter legend label { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+
+/* The destination city's airports, to pick from. */
+.kg-transit-booking .kgt-airport-choice { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; }
+.kg-transit-booking .kgt-airport-choice label { display: flex; align-items: center; gap: 8px; padding: 3px 6px; border-radius: 4px; }
+.kg-transit-booking .kgt-airport-choice label:hover { background: rgba(138, 104, 232, 0.12); }
+.kg-transit-booking .kgt-airport-choice .iata { margin-left: auto; opacity: 0.7; font-variant-numeric: tabular-nums; letter-spacing: 0.05em; }
+.kg-transit-booking .origin { margin-bottom: 4px; font-weight: 600; }
+.kg-transit-booking .origin i { color: #8a68e8; }
+
+/* The flight screen: the clock, the GM's controls, where the trip is. */
+#kg-transit-flight .kgt-flight-clock {
+  position: absolute;
+  top: 16px;
+  right: 22px;
+  display: grid;
+  justify-items: end;
+  color: #fff;
+  font: 600 1.6rem var(--font-primary, Signika, sans-serif);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+#kg-transit-flight .kgt-flight-clock .eta { font-size: 0.55em; font-weight: 400; opacity: 0.9; }
+#kg-transit-flight .kgt-flight-controls {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  pointer-events: auto;
+}
+#kg-transit-flight .kgt-flight-controls:empty { display: none; }
+#kg-transit-flight .kgt-flight-controls button {
+  width: auto;
+  margin: 0;
+  padding: 4px 12px;
+  line-height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(20, 16, 40, 0.65);
+  color: #fff;
+  font: 500 14px var(--font-primary, Signika, sans-serif);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+#kg-transit-flight .kgt-flight-controls button:hover { background: rgba(91, 63, 196, 0.8); }
+#kg-transit-flight .kgt-flight-controls .rates { display: flex; border-radius: 999px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.45); }
+#kg-transit-flight .kgt-flight-controls .rates button { border: 0; border-radius: 0; padding: 4px 9px; background: rgba(20, 16, 40, 0.65); }
+#kg-transit-flight .kgt-flight-controls .rates button.active { background: #8a68e8; }
+#kg-transit-flight .kgt-flight-status { display: grid; justify-items: start; gap: 2px; }
+#kg-transit-flight .kgt-flight-status span { font-size: 0.8em; opacity: 0.85; }
+/* The step and the time it has left: "Boarding · 14 min left". */
+#kg-transit-flight .kgt-flight-step { display: flex; align-items: baseline; gap: 0.5em; }
+#kg-transit-flight .kgt-flight-step em:not(:empty)::before { content: "·"; margin-right: 0.5em; opacity: 0.7; }
+#kg-transit-flight .kgt-flight-step em { font-style: normal; font-size: 0.8em; font-variant-numeric: tabular-nums; opacity: 0.9; }

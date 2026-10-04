@@ -1,0 +1,324 @@
+{
+  "about": "Each city's airports as of 1986, built into data/airports.json by tools/build-airports.mjs (outline and terminals from OpenStreetMap by IATA code, or hand-drawn when the airport is gone). size: hub | medium | small, which sets how long it takes to get through (scripts in KG Transit). cities: the KG Cities cities it serves. opened/closed: years.",
+  "airports": [
+    {
+      "iata": "BOS",
+      "name": "Logan International Airport",
+      "cities": [
+        "boston"
+      ],
+      "size": "hub",
+      "at": [
+        42.3656,
+        -71.0096
+      ],
+      "text": "Boston's airport on landfill in the harbour, a short cab ride through the Callahan Tunnel from downtown. Eastern's shuttle leaves for New York and Washington every hour on the hour, no reservation needed."
+    },
+    {
+      "iata": "JFK",
+      "name": "John F. Kennedy International Airport",
+      "cities": [
+        "new-york"
+      ],
+      "size": "hub",
+      "at": [
+        40.6413,
+        -73.7781
+      ],
+      "text": "The gateway to the world on Jamaica Bay, each airline with its own terminal around the central loop, from TWA's winged Flight Center to Pan Am's flying saucer Worldport. The Concorde leaves for London and Paris every day."
+    },
+    {
+      "iata": "LGA",
+      "name": "LaGuardia Airport",
+      "cities": [
+        "new-york"
+      ],
+      "size": "hub",
+      "at": [
+        40.7769,
+        -73.874
+      ],
+      "text": "New York's crowded airport on Flushing Bay, closest to Manhattan, for flights inside the country. The Eastern Air-Shuttle and the Pan Am Shuttle run hourly to Boston and Washington from their own terminals."
+    },
+    {
+      "iata": "EWR",
+      "name": "Newark International Airport",
+      "cities": [
+        "new-york"
+      ],
+      "size": "hub",
+      "at": [
+        40.6895,
+        -74.1745
+      ],
+      "text": "The airport in the Jersey Meadows, where People Express sells cheap seats and collects the fares on board after takeoff. Two modern terminals stand beside the New Jersey Turnpike, a third still unfinished."
+    },
+    {
+      "iata": "DCA",
+      "name": "Washington National Airport",
+      "cities": [
+        "washington"
+      ],
+      "size": "medium",
+      "at": [
+        38.8512,
+        -77.0402
+      ],
+      "text": "Congress's own airport on the Potomac, a Metro stop from the Capitol, its perimeter rule keeping jets to shorter flights. Planes follow the river to land, the monuments off the left wing."
+    },
+    {
+      "iata": "IAD",
+      "name": "Washington Dulles International Airport",
+      "cities": [
+        "washington"
+      ],
+      "size": "medium",
+      "at": [
+        38.9531,
+        -77.4565
+      ],
+      "text": "Eero Saarinen's swooping terminal far out in the Virginia countryside, its wings lifted on leaning pillars. Mobile lounges on stilts carry passengers out to the planes."
+    },
+    {
+      "iata": "BWI",
+      "name": "Baltimore-Washington International Airport",
+      "cities": [
+        "baltimore",
+        "washington"
+      ],
+      "size": "medium",
+      "at": [
+        39.1774,
+        -76.6684
+      ],
+      "text": "The renamed Friendship Airport between Baltimore and Washington, Piedmont Airlines' busy hub. An Amtrak station on the Northeast Corridor opened beside it in 1980."
+    },
+    {
+      "iata": "ORD",
+      "name": "O'Hare International Airport",
+      "cities": [
+        "chicago"
+      ],
+      "size": "hub",
+      "at": [
+        41.9742,
+        -87.9073
+      ],
+      "text": "The world's busiest airport, where United and American trade connecting passengers by the thousand every hour. The rapid transit has reached the terminal since 1984, forty minutes from the Loop."
+    },
+    {
+      "iata": "MDW",
+      "name": "Chicago Midway Airport",
+      "cities": [
+        "chicago"
+      ],
+      "size": "small",
+      "at": [
+        41.7868,
+        -87.7522
+      ],
+      "text": "The old municipal airport, a square mile boxed in by Southwest Side bungalows, once the busiest in the world. Midway Airlines brought jets back here in 1979."
+    },
+    {
+      "iata": "PHL",
+      "name": "Philadelphia International Airport",
+      "cities": [
+        "philadelphia"
+      ],
+      "size": "medium",
+      "at": [
+        39.8744,
+        -75.2424
+      ],
+      "text": "Philadelphia's airport on the Delaware riverbank in the southwest of the city. The airport rail line from Center City opened in 1985."
+    },
+    {
+      "iata": "ATL",
+      "name": "Hartsfield Atlanta International Airport",
+      "cities": [
+        "atlanta"
+      ],
+      "size": "hub",
+      "at": [
+        33.6407,
+        -84.4277
+      ],
+      "text": "The midfield terminal of 1980, the biggest in the world, with an underground people mover linking its long parallel concourses. Delta and Eastern hub here, and they say you change planes in Atlanta even on the way to heaven."
+    },
+    {
+      "iata": "MIA",
+      "name": "Miami International Airport",
+      "cities": [
+        "miami"
+      ],
+      "size": "hub",
+      "at": [
+        25.7959,
+        -80.287
+      ],
+      "text": "Eastern's southern hub and Pan Am's gateway to Latin America, its long finger concourses busy with flights to the Caribbean. Cargo jets for South America crowd the north side.",
+      "terminalAt": [
+        25.7955,
+        -80.2778
+      ]
+    },
+    {
+      "iata": "FLL",
+      "name": "Fort Lauderdale-Hollywood International Airport",
+      "cities": [
+        "miami"
+      ],
+      "size": "medium",
+      "at": [
+        26.0742,
+        -80.1506
+      ],
+      "text": "Broward County's airport beside Port Everglades, for snowbirds and spring breakers. Thirty miles north of Miami, it is often the cheaper fare."
+    },
+    {
+      "iata": "DTW",
+      "name": "Detroit Metropolitan Wayne County Airport",
+      "cities": [
+        "detroit"
+      ],
+      "size": "hub",
+      "at": [
+        42.2162,
+        -83.3554
+      ],
+      "text": "Detroit's main airport in Romulus, twenty miles west of downtown, the hub of Republic Airlines until Northwest bought it this year. Its Smith and Davey terminals date from the 1960s and 1970s."
+    },
+    {
+      "iata": "DET",
+      "name": "Detroit City Airport",
+      "cities": [
+        "detroit"
+      ],
+      "size": "small",
+      "at": [
+        42.4092,
+        -83.0099
+      ],
+      "text": "The small city airport on the East Side off Gratiot Avenue, five miles from downtown. Commuter flights and private planes use it now that the airlines have moved to Metro."
+    },
+    {
+      "iata": "STL",
+      "name": "Lambert-St. Louis International Airport",
+      "cities": [
+        "st-louis"
+      ],
+      "size": "hub",
+      "at": [
+        38.7487,
+        -90.37
+      ],
+      "text": "TWA's hub under the vaulted concrete domes of Minoru Yamasaki's 1956 terminal. TWA took over Ozark Air Lines this year and now runs most of the flights."
+    },
+    {
+      "iata": "LAS",
+      "name": "McCarran International Airport",
+      "cities": [
+        "las-vegas"
+      ],
+      "size": "medium",
+      "at": [
+        36.084,
+        -115.1537
+      ],
+      "text": "The airport at the south end of the Strip, slot machines waiting at the gates for arriving gamblers. Junket charters and jets from every western city fill the ramp on weekends."
+    },
+    {
+      "iata": "AUS",
+      "name": "Robert Mueller Municipal Airport",
+      "cities": [
+        "austin"
+      ],
+      "size": "small",
+      "at": [
+        30.2985,
+        -97.7105
+      ],
+      "closed": 1999,
+      "hand": true,
+      "text": "Austin's small airport three miles northeast of the Capitol, its one terminal on Airport Boulevard. Jets climb out low over the neighbourhoods around it."
+    },
+    {
+      "iata": "LAX",
+      "name": "Los Angeles International Airport",
+      "cities": [
+        "los-angeles"
+      ],
+      "size": "hub",
+      "at": [
+        33.9416,
+        -118.4085
+      ],
+      "text": "The horseshoe of terminals around the Theme Building's flying-saucer arches, rebuilt for the 1984 Olympics with an upper deck and the new Tom Bradley International Terminal. Jets roar in over Inglewood day and night."
+    },
+    {
+      "iata": "BUR",
+      "name": "Burbank-Glendale-Pasadena Airport",
+      "cities": [
+        "los-angeles"
+      ],
+      "size": "small",
+      "at": [
+        34.2007,
+        -118.3587
+      ],
+      "text": "The old Lockheed Air Terminal in the San Fernando Valley, where you walk across the tarmac and climb the stairs to the plane. PSA flies from here to San Francisco for less than a tank of gas."
+    },
+    {
+      "iata": "LGB",
+      "name": "Long Beach Airport",
+      "cities": [
+        "los-angeles"
+      ],
+      "size": "small",
+      "at": [
+        33.8177,
+        -118.1516
+      ],
+      "text": "Long Beach's Streamline Moderne terminal of 1941, beside the Douglas plant where DC-9s and MD-80s are built. Jet America and a few others fly from here, under strict noise rules."
+    },
+    {
+      "iata": "SFO",
+      "name": "San Francisco International Airport",
+      "cities": [
+        "san-francisco"
+      ],
+      "size": "hub",
+      "at": [
+        37.6213,
+        -122.379
+      ],
+      "text": "United's Pacific gateway on the bay shore south of the city, its horseshoe of terminals around a central garage. Fog often slows the landings to one runway in the summer."
+    },
+    {
+      "iata": "OAK",
+      "name": "Oakland International Airport",
+      "cities": [
+        "san-francisco"
+      ],
+      "size": "medium",
+      "at": [
+        37.7126,
+        -122.2197
+      ],
+      "text": "The East Bay's airport on bay fill near the Coliseum, a BART shuttle bus ride from the Coliseum station. Less crowded and less foggy than SFO."
+    },
+    {
+      "iata": "SJC",
+      "name": "San Jose International Airport",
+      "cities": [
+        "san-francisco"
+      ],
+      "size": "medium",
+      "at": [
+        37.3639,
+        -121.9289
+      ],
+      "text": "Silicon Valley's airport, two miles from downtown San Jose, busy with engineers flying out for the week. Its small terminals keep the curb a short walk from the gate."
+    }
+  ]
+}

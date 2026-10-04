@@ -1,0 +1,1243 @@
+{
+ "year": 1986,
+ "stations": [
+  {
+   "id": "alewife",
+   "name": "Alewife",
+   "lat": 42.39615,
+   "lon": -71.14068,
+   "platform": "underground"
+  },
+  {
+   "id": "davis",
+   "name": "Davis",
+   "lat": 42.3967,
+   "lon": -71.1218,
+   "platform": "underground"
+  },
+  {
+   "id": "porter",
+   "name": "Porter",
+   "lat": 42.3884,
+   "lon": -71.1191,
+   "platform": "underground"
+  },
+  {
+   "id": "harvard",
+   "name": "Harvard",
+   "lat": 42.3734,
+   "lon": -71.1189,
+   "platform": "underground"
+  },
+  {
+   "id": "central",
+   "name": "Central",
+   "lat": 42.36532,
+   "lon": -71.10356,
+   "platform": "underground"
+  },
+  {
+   "id": "kendall",
+   "name": "Kendall",
+   "lat": 42.36242,
+   "lon": -71.08572,
+   "platform": "underground"
+  },
+  {
+   "id": "charles",
+   "name": "Charles",
+   "lat": 42.36114,
+   "lon": -71.07101,
+   "platform": "underground"
+  },
+  {
+   "id": "park-st",
+   "name": "Park Street",
+   "lat": 42.3564,
+   "lon": -71.0624,
+   "platform": "underground"
+  },
+  {
+   "id": "washington",
+   "name": "Washington",
+   "lat": 42.3555,
+   "lon": -71.0603,
+   "platform": "underground"
+  },
+  {
+   "id": "south-station",
+   "name": "South Station",
+   "lat": 42.3523,
+   "lon": -71.0552,
+   "platform": "underground"
+  },
+  {
+   "id": "broadway",
+   "name": "Broadway",
+   "lat": 42.34301,
+   "lon": -71.05739,
+   "platform": "underground"
+  },
+  {
+   "id": "andrew",
+   "name": "Andrew",
+   "lat": 42.3302,
+   "lon": -71.0577,
+   "platform": "underground"
+  },
+  {
+   "id": "columbia",
+   "name": "JFK/UMass",
+   "lat": 42.3206,
+   "lon": -71.0524,
+   "platform": "underground"
+  },
+  {
+   "id": "savin-hill",
+   "name": "Savin Hill",
+   "lat": 42.31065,
+   "lon": -71.05362,
+   "platform": "underground"
+  },
+  {
+   "id": "fields-corner",
+   "name": "Fields Corner",
+   "lat": 42.29999,
+   "lon": -71.06208,
+   "platform": "underground"
+  },
+  {
+   "id": "shawmut",
+   "name": "Shawmut",
+   "lat": 42.2931,
+   "lon": -71.0657,
+   "platform": "underground"
+  },
+  {
+   "id": "ashmont",
+   "name": "Ashmont",
+   "lat": 42.28452,
+   "lon": -71.06382,
+   "platform": "underground"
+  },
+  {
+   "id": "north-quincy",
+   "name": "North Quincy",
+   "lat": 42.27586,
+   "lon": -71.03024,
+   "platform": "underground"
+  },
+  {
+   "id": "wollaston",
+   "name": "Wollaston",
+   "lat": 42.26676,
+   "lon": -71.02048,
+   "platform": "underground"
+  },
+  {
+   "id": "quincy-center",
+   "name": "Quincy Center",
+   "lat": 42.2518,
+   "lon": -71.0054,
+   "platform": "underground"
+  },
+  {
+   "id": "quincy-adams",
+   "name": "Quincy Adams",
+   "lat": 42.23327,
+   "lon": -71.00689,
+   "platform": "underground"
+  },
+  {
+   "id": "braintree",
+   "name": "Braintree",
+   "lat": 42.20757,
+   "lon": -71.00163,
+   "platform": "underground"
+  },
+  {
+   "id": "cedar-grove",
+   "name": "Cedar Grove",
+   "lat": 42.2796,
+   "lon": -71.0605,
+   "platform": "above"
+  },
+  {
+   "id": "butler",
+   "name": "Butler",
+   "lat": 42.2722,
+   "lon": -71.0625,
+   "platform": "above"
+  },
+  {
+   "id": "milton",
+   "name": "Milton",
+   "lat": 42.2701,
+   "lon": -71.0675,
+   "platform": "above"
+  },
+  {
+   "id": "central-ave",
+   "name": "Central Avenue",
+   "lat": 42.27,
+   "lon": -71.0733,
+   "platform": "above"
+  },
+  {
+   "id": "valley-rd",
+   "name": "Valley Road",
+   "lat": 42.2683,
+   "lon": -71.0811,
+   "platform": "above"
+  },
+  {
+   "id": "capen-st",
+   "name": "Capen Street",
+   "lat": 42.2676,
+   "lon": -71.0875,
+   "platform": "above"
+  },
+  {
+   "id": "mattapan",
+   "name": "Mattapan",
+   "lat": 42.2676,
+   "lon": -71.0924,
+   "platform": "underground"
+  },
+  {
+   "id": "oak-grove",
+   "name": "Oak Grove",
+   "lat": 42.43727,
+   "lon": -71.07091,
+   "platform": "underground"
+  },
+  {
+   "id": "malden-center",
+   "name": "Malden Center",
+   "lat": 42.4267,
+   "lon": -71.0742,
+   "platform": "underground"
+  },
+  {
+   "id": "wellington",
+   "name": "Wellington",
+   "lat": 42.40166,
+   "lon": -71.07714,
+   "platform": "underground"
+  },
+  {
+   "id": "sullivan-sq",
+   "name": "Sullivan Square",
+   "lat": 42.38427,
+   "lon": -71.07683,
+   "platform": "underground"
+  },
+  {
+   "id": "community-college",
+   "name": "Community College",
+   "lat": 42.37401,
+   "lon": -71.07068,
+   "platform": "underground"
+  },
+  {
+   "id": "north-station",
+   "name": "North Station",
+   "lat": 42.3656,
+   "lon": -71.0613,
+   "platform": "underground"
+  },
+  {
+   "id": "haymarket",
+   "name": "Haymarket",
+   "lat": 42.36209,
+   "lon": -71.05793,
+   "platform": "underground"
+  },
+  {
+   "id": "state",
+   "name": "State",
+   "lat": 42.3589,
+   "lon": -71.0576,
+   "platform": "underground"
+  },
+  {
+   "id": "essex",
+   "name": "Essex",
+   "lat": 42.3525,
+   "lon": -71.0628,
+   "platform": "underground"
+  },
+  {
+   "id": "dover",
+   "name": "Dover",
+   "lat": 42.3445,
+   "lon": -71.065,
+   "platform": "underground"
+  },
+  {
+   "id": "northampton",
+   "name": "Northampton",
+   "lat": 42.3367,
+   "lon": -71.0765,
+   "platform": "underground"
+  },
+  {
+   "id": "dudley",
+   "name": "Dudley",
+   "lat": 42.3295,
+   "lon": -71.0838,
+   "platform": "underground"
+  },
+  {
+   "id": "egleston",
+   "name": "Egleston",
+   "lat": 42.3153,
+   "lon": -71.0983,
+   "platform": "underground"
+  },
+  {
+   "id": "green-st",
+   "name": "Green Street",
+   "lat": 42.31,
+   "lon": -71.1045,
+   "platform": "underground"
+  },
+  {
+   "id": "forest-hills",
+   "name": "Forest Hills",
+   "lat": 42.3005,
+   "lon": -71.1137,
+   "platform": "underground"
+  },
+  {
+   "id": "wonderland",
+   "name": "Wonderland",
+   "lat": 42.4134,
+   "lon": -70.9917,
+   "platform": "underground"
+  },
+  {
+   "id": "revere-beach",
+   "name": "Revere Beach",
+   "lat": 42.4078,
+   "lon": -70.9925,
+   "platform": "underground"
+  },
+  {
+   "id": "beachmont",
+   "name": "Beachmont",
+   "lat": 42.3975,
+   "lon": -70.9923,
+   "platform": "underground"
+  },
+  {
+   "id": "suffolk-downs",
+   "name": "Suffolk Downs",
+   "lat": 42.3905,
+   "lon": -70.9971,
+   "platform": "underground"
+  },
+  {
+   "id": "orient-heights",
+   "name": "Orient Heights",
+   "lat": 42.3869,
+   "lon": -71.0047,
+   "platform": "underground"
+  },
+  {
+   "id": "wood-island",
+   "name": "Wood Island",
+   "lat": 42.3796,
+   "lon": -71.0229,
+   "platform": "underground"
+  },
+  {
+   "id": "airport",
+   "name": "Airport",
+   "lat": 42.3743,
+   "lon": -71.0303,
+   "platform": "underground"
+  },
+  {
+   "id": "maverick",
+   "name": "Maverick",
+   "lat": 42.3691,
+   "lon": -71.0395,
+   "platform": "underground"
+  },
+  {
+   "id": "aquarium",
+   "name": "Aquarium",
+   "lat": 42.35957,
+   "lon": -71.05199,
+   "platform": "underground"
+  },
+  {
+   "id": "government-center",
+   "name": "Government Center",
+   "lat": 42.3597,
+   "lon": -71.0592,
+   "platform": "underground"
+  },
+  {
+   "id": "bowdoin",
+   "name": "Bowdoin",
+   "lat": 42.3614,
+   "lon": -71.062,
+   "platform": "underground"
+  },
+  {
+   "id": "lechmere",
+   "name": "Lechmere",
+   "lat": 42.3708,
+   "lon": -71.0767,
+   "platform": "underground"
+  },
+  {
+   "id": "science-park",
+   "name": "Science Park",
+   "lat": 42.36671,
+   "lon": -71.06786,
+   "platform": "underground"
+  },
+  {
+   "id": "boylston",
+   "name": "Boylston",
+   "lat": 42.35321,
+   "lon": -71.06452,
+   "platform": "underground"
+  },
+  {
+   "id": "arlington",
+   "name": "Arlington",
+   "lat": 42.3518,
+   "lon": -71.0705,
+   "platform": "underground"
+  },
+  {
+   "id": "copley",
+   "name": "Copley",
+   "lat": 42.35,
+   "lon": -71.0774,
+   "platform": "underground"
+  },
+  {
+   "id": "auditorium",
+   "name": "Auditorium",
+   "lat": 42.3479,
+   "lon": -71.0873,
+   "platform": "underground"
+  },
+  {
+   "id": "kenmore",
+   "name": "Kenmore",
+   "lat": 42.34889,
+   "lon": -71.09566,
+   "platform": "underground"
+  },
+  {
+   "id": "blandford-st",
+   "name": "Blandford Street",
+   "lat": 42.3491,
+   "lon": -71.1001,
+   "platform": "above"
+  },
+  {
+   "id": "bu-east",
+   "name": "B.U. East",
+   "lat": 42.3496,
+   "lon": -71.1038,
+   "platform": "above"
+  },
+  {
+   "id": "bu-central",
+   "name": "B.U. Central",
+   "lat": 42.3503,
+   "lon": -71.1066,
+   "platform": "above"
+  },
+  {
+   "id": "bu-west",
+   "name": "B.U. West",
+   "lat": 42.3509,
+   "lon": -71.1135,
+   "platform": "above"
+  },
+  {
+   "id": "st-paul-st-b",
+   "name": "St. Paul Street",
+   "lat": 42.3511,
+   "lon": -71.1164,
+   "platform": "above"
+  },
+  {
+   "id": "pleasant-st",
+   "name": "Pleasant Street",
+   "lat": 42.3513,
+   "lon": -71.1188,
+   "platform": "above"
+  },
+  {
+   "id": "babcock-st",
+   "name": "Babcock Street",
+   "lat": 42.3516,
+   "lon": -71.1215,
+   "platform": "above"
+  },
+  {
+   "id": "packards-corner",
+   "name": "Packard's Corner",
+   "lat": 42.3517,
+   "lon": -71.1255,
+   "platform": "above"
+  },
+  {
+   "id": "harvard-ave",
+   "name": "Harvard Avenue",
+   "lat": 42.3502,
+   "lon": -71.1313,
+   "platform": "above"
+  },
+  {
+   "id": "griggs-st",
+   "name": "Griggs Street",
+   "lat": 42.3485,
+   "lon": -71.1344,
+   "platform": "above"
+  },
+  {
+   "id": "allston-st",
+   "name": "Allston Street",
+   "lat": 42.3484,
+   "lon": -71.1375,
+   "platform": "above"
+  },
+  {
+   "id": "warren-st",
+   "name": "Warren Street",
+   "lat": 42.348,
+   "lon": -71.1403,
+   "platform": "above"
+  },
+  {
+   "id": "washington-st-b",
+   "name": "Washington Street",
+   "lat": 42.3438,
+   "lon": -71.1426,
+   "platform": "above"
+  },
+  {
+   "id": "sutherland-rd",
+   "name": "Sutherland Road",
+   "lat": 42.342,
+   "lon": -71.1459,
+   "platform": "above"
+  },
+  {
+   "id": "chiswick-rd",
+   "name": "Chiswick Road",
+   "lat": 42.3404,
+   "lon": -71.151,
+   "platform": "above"
+  },
+  {
+   "id": "chestnut-hill-ave",
+   "name": "Chestnut Hill Avenue",
+   "lat": 42.3382,
+   "lon": -71.1532,
+   "platform": "above"
+  },
+  {
+   "id": "south-st",
+   "name": "South Street",
+   "lat": 42.3396,
+   "lon": -71.1574,
+   "platform": "above"
+  },
+  {
+   "id": "boston-college",
+   "name": "Boston College",
+   "lat": 42.34,
+   "lon": -71.1667,
+   "platform": "underground"
+  },
+  {
+   "id": "st-marys-st",
+   "name": "St. Mary's Street",
+   "lat": 42.3459,
+   "lon": -71.1072,
+   "platform": "above"
+  },
+  {
+   "id": "hawes-st",
+   "name": "Hawes Street",
+   "lat": 42.345,
+   "lon": -71.1112,
+   "platform": "above"
+  },
+  {
+   "id": "kent-st",
+   "name": "Kent Street",
+   "lat": 42.3446,
+   "lon": -71.1142,
+   "platform": "above"
+  },
+  {
+   "id": "st-paul-st-c",
+   "name": "St. Paul Street",
+   "lat": 42.3433,
+   "lon": -71.1167,
+   "platform": "above"
+  },
+  {
+   "id": "coolidge-corner",
+   "name": "Coolidge Corner",
+   "lat": 42.342,
+   "lon": -71.1213,
+   "platform": "above"
+  },
+  {
+   "id": "summit-ave",
+   "name": "Summit Avenue",
+   "lat": 42.341,
+   "lon": -71.1253,
+   "platform": "above"
+  },
+  {
+   "id": "brandon-hall",
+   "name": "Brandon Hall",
+   "lat": 42.3401,
+   "lon": -71.129,
+   "platform": "above"
+  },
+  {
+   "id": "fairbanks-st",
+   "name": "Fairbanks Street",
+   "lat": 42.3394,
+   "lon": -71.1315,
+   "platform": "above"
+  },
+  {
+   "id": "washington-sq",
+   "name": "Washington Square",
+   "lat": 42.3395,
+   "lon": -71.1352,
+   "platform": "above"
+  },
+  {
+   "id": "tappan-st",
+   "name": "Tappan Street",
+   "lat": 42.3383,
+   "lon": -71.1388,
+   "platform": "above"
+  },
+  {
+   "id": "dean-rd",
+   "name": "Dean Road",
+   "lat": 42.3374,
+   "lon": -71.1418,
+   "platform": "above"
+  },
+  {
+   "id": "englewood-ave",
+   "name": "Englewood Avenue",
+   "lat": 42.3367,
+   "lon": -71.1453,
+   "platform": "above"
+  },
+  {
+   "id": "cleveland-circle",
+   "name": "Cleveland Circle",
+   "lat": 42.33623,
+   "lon": -71.149,
+   "platform": "underground"
+  },
+  {
+   "id": "fenway",
+   "name": "Fenway",
+   "lat": 42.3452,
+   "lon": -71.1043,
+   "platform": "above"
+  },
+  {
+   "id": "longwood",
+   "name": "Longwood",
+   "lat": 42.3411,
+   "lon": -71.11,
+   "platform": "above"
+  },
+  {
+   "id": "brookline-village",
+   "name": "Brookline Village",
+   "lat": 42.3327,
+   "lon": -71.1167,
+   "platform": "above"
+  },
+  {
+   "id": "brookline-hills",
+   "name": "Brookline Hills",
+   "lat": 42.3314,
+   "lon": -71.1268,
+   "platform": "above"
+  },
+  {
+   "id": "beaconsfield",
+   "name": "Beaconsfield",
+   "lat": 42.3358,
+   "lon": -71.1406,
+   "platform": "above"
+  },
+  {
+   "id": "reservoir",
+   "name": "Reservoir",
+   "lat": 42.3351,
+   "lon": -71.1489,
+   "platform": "above"
+  },
+  {
+   "id": "chestnut-hill",
+   "name": "Chestnut Hill",
+   "lat": 42.3263,
+   "lon": -71.1648,
+   "platform": "above"
+  },
+  {
+   "id": "newton-centre",
+   "name": "Newton Centre",
+   "lat": 42.3295,
+   "lon": -71.1925,
+   "platform": "above"
+  },
+  {
+   "id": "newton-highlands",
+   "name": "Newton Highlands",
+   "lat": 42.3226,
+   "lon": -71.2059,
+   "platform": "above"
+  },
+  {
+   "id": "eliot",
+   "name": "Eliot",
+   "lat": 42.319,
+   "lon": -71.2165,
+   "platform": "above"
+  },
+  {
+   "id": "waban",
+   "name": "Waban",
+   "lat": 42.3259,
+   "lon": -71.2307,
+   "platform": "above"
+  },
+  {
+   "id": "woodland",
+   "name": "Woodland",
+   "lat": 42.333,
+   "lon": -71.244,
+   "platform": "above"
+  },
+  {
+   "id": "riverside",
+   "name": "Riverside",
+   "lat": 42.3373,
+   "lon": -71.2525,
+   "platform": "underground"
+  },
+  {
+   "id": "prudential",
+   "name": "Prudential",
+   "lat": 42.34569,
+   "lon": -71.08136,
+   "platform": "underground"
+  },
+  {
+   "id": "symphony",
+   "name": "Symphony",
+   "lat": 42.34277,
+   "lon": -71.08495,
+   "platform": "underground"
+  },
+  {
+   "id": "northeastern",
+   "name": "Northeastern",
+   "lat": 42.3401,
+   "lon": -71.0889,
+   "platform": "above"
+  },
+  {
+   "id": "museum",
+   "name": "Museum",
+   "lat": 42.3375,
+   "lon": -71.0957,
+   "platform": "above"
+  },
+  {
+   "id": "longwood-ave",
+   "name": "Longwood Avenue",
+   "lat": 42.3359,
+   "lon": -71.1005,
+   "platform": "above"
+  },
+  {
+   "id": "brigham-circle",
+   "name": "Brigham Circle",
+   "lat": 42.3342,
+   "lon": -71.1043,
+   "platform": "above"
+  },
+  {
+   "id": "fenwood-rd",
+   "name": "Fenwood Road",
+   "lat": 42.3336,
+   "lon": -71.1056,
+   "platform": "above"
+  },
+  {
+   "id": "mission-park",
+   "name": "Mission Park",
+   "lat": 42.3332,
+   "lon": -71.1094,
+   "platform": "above"
+  },
+  {
+   "id": "riverway",
+   "name": "Riverway",
+   "lat": 42.3317,
+   "lon": -71.1119,
+   "platform": "above"
+  },
+  {
+   "id": "back-of-the-hill",
+   "name": "Back of the Hill",
+   "lat": 42.3299,
+   "lon": -71.1113,
+   "platform": "above"
+  },
+  {
+   "id": "heath-st",
+   "name": "Heath Street",
+   "lat": 42.3283,
+   "lon": -71.1105,
+   "platform": "underground"
+  }
+ ],
+ "lines": [
+  {
+   "id": "red-ashmont",
+   "name": "Red Line (Ashmont)",
+   "color": "#DA291C",
+   "kind": "metro",
+   "stops": [
+    "alewife",
+    "davis",
+    "porter",
+    "harvard",
+    "central",
+    "kendall",
+    "charles",
+    "park-st",
+    "washington",
+    "south-station",
+    "broadway",
+    "andrew",
+    "columbia",
+    "savin-hill",
+    "fields-corner",
+    "shawmut",
+    "ashmont"
+   ],
+   "segments": [
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "bridge",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "suburb",
+    "suburb",
+    "suburb",
+    "tunnel-concrete",
+    "tunnel-concrete"
+   ]
+  },
+  {
+   "id": "red-braintree",
+   "name": "Red Line (Braintree)",
+   "color": "#DA291C",
+   "kind": "metro",
+   "stops": [
+    "alewife",
+    "davis",
+    "porter",
+    "harvard",
+    "central",
+    "kendall",
+    "charles",
+    "park-st",
+    "washington",
+    "south-station",
+    "broadway",
+    "andrew",
+    "columbia",
+    "north-quincy",
+    "wollaston",
+    "quincy-center",
+    "quincy-adams",
+    "braintree"
+   ],
+   "segments": [
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "bridge",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "suburb",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete"
+   ]
+  },
+  {
+   "id": "mattapan",
+   "name": "Mattapan High Speed Line",
+   "color": "#DA291C",
+   "kind": "light",
+   "stops": [
+    "ashmont",
+    "cedar-grove",
+    "butler",
+    "milton",
+    "central-ave",
+    "valley-rd",
+    "capen-st",
+    "mattapan"
+   ],
+   "segments": [
+    "forest",
+    "forest",
+    "forest",
+    "forest",
+    "forest",
+    "forest",
+    "forest"
+   ]
+  },
+  {
+   "id": "orange",
+   "name": "Orange Line",
+   "color": "#ED8B00",
+   "kind": "metro",
+   "stops": [
+    "oak-grove",
+    "malden-center",
+    "wellington",
+    "sullivan-sq",
+    "community-college",
+    "north-station",
+    "haymarket",
+    "state",
+    "washington",
+    "essex",
+    "dover",
+    "northampton",
+    "dudley",
+    "egleston",
+    "green-st",
+    "forest-hills"
+   ],
+   "segments": [
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete"
+   ]
+  },
+  {
+   "id": "blue",
+   "name": "Blue Line",
+   "color": "#003DA5",
+   "kind": "metro",
+   "stops": [
+    "wonderland",
+    "revere-beach",
+    "beachmont",
+    "suffolk-downs",
+    "orient-heights",
+    "wood-island",
+    "airport",
+    "maverick",
+    "aquarium",
+    "state",
+    "government-center",
+    "bowdoin"
+   ],
+   "segments": [
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete"
+   ]
+  },
+  {
+   "id": "green-b",
+   "name": "Green Line B (Boston College)",
+   "color": "#00843D",
+   "kind": "tram",
+   "stops": [
+    "lechmere",
+    "science-park",
+    "north-station",
+    "haymarket",
+    "government-center",
+    "park-st",
+    "boylston",
+    "arlington",
+    "copley",
+    "auditorium",
+    "kenmore",
+    "blandford-st",
+    "bu-east",
+    "bu-central",
+    "bu-west",
+    "st-paul-st-b",
+    "pleasant-st",
+    "babcock-st",
+    "packards-corner",
+    "harvard-ave",
+    "griggs-st",
+    "allston-st",
+    "warren-st",
+    "washington-st-b",
+    "sutherland-rd",
+    "chiswick-rd",
+    "chestnut-hill-ave",
+    "south-st",
+    "boston-college"
+   ],
+   "segments": [
+    "elevated",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city"
+   ]
+  },
+  {
+   "id": "green-c",
+   "name": "Green Line C (Cleveland Circle)",
+   "color": "#00843D",
+   "kind": "tram",
+   "stops": [
+    "lechmere",
+    "science-park",
+    "north-station",
+    "haymarket",
+    "government-center",
+    "park-st",
+    "boylston",
+    "arlington",
+    "copley",
+    "auditorium",
+    "kenmore",
+    "st-marys-st",
+    "hawes-st",
+    "kent-st",
+    "st-paul-st-c",
+    "coolidge-corner",
+    "summit-ave",
+    "brandon-hall",
+    "fairbanks-st",
+    "washington-sq",
+    "tappan-st",
+    "dean-rd",
+    "englewood-ave",
+    "cleveland-circle"
+   ],
+   "segments": [
+    "elevated",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city"
+   ]
+  },
+  {
+   "id": "green-d",
+   "name": "Green Line D (Riverside)",
+   "color": "#00843D",
+   "kind": "light",
+   "stops": [
+    "lechmere",
+    "science-park",
+    "north-station",
+    "haymarket",
+    "government-center",
+    "park-st",
+    "boylston",
+    "arlington",
+    "copley",
+    "auditorium",
+    "kenmore",
+    "fenway",
+    "longwood",
+    "brookline-village",
+    "brookline-hills",
+    "beaconsfield",
+    "reservoir",
+    "chestnut-hill",
+    "newton-centre",
+    "newton-highlands",
+    "eliot",
+    "waban",
+    "woodland",
+    "riverside"
+   ],
+   "segments": [
+    "elevated",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "suburb",
+    "suburb",
+    "suburb",
+    "suburb",
+    "suburb",
+    "suburb",
+    "suburb",
+    "suburb",
+    "suburb",
+    "suburb",
+    "suburb",
+    "suburb"
+   ]
+  },
+  {
+   "id": "green-e",
+   "name": "Green Line E (Heath Street)",
+   "color": "#00843D",
+   "kind": "tram",
+   "stops": [
+    "lechmere",
+    "science-park",
+    "north-station",
+    "haymarket",
+    "government-center",
+    "park-st",
+    "boylston",
+    "arlington",
+    "copley",
+    "prudential",
+    "symphony",
+    "northeastern",
+    "museum",
+    "longwood-ave",
+    "brigham-circle",
+    "fenwood-rd",
+    "mission-park",
+    "riverway",
+    "back-of-the-hill",
+    "heath-st"
+   ],
+   "segments": [
+    "elevated",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "tunnel-concrete",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city",
+    "city"
+   ]
+  }
+ ]
+}

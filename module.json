@@ -1,0 +1,53 @@
+{
+  "id": "kg-transit",
+  "title": "KG Transit",
+  "description": "Build subway, tram and steam railway lines on any scene, place their stops on the map, and ride them in real time with scenery, weather and fares. KG Cities scenes get their city's real rail network for the 1980s or today, and their airports: fly the party between cities as it was in 1986.",
+  "version": "4.6.0",
+  "license": "LICENSE",
+  "url": "https://github.com/KonteiKeisei/kg-transit",
+  "readme": "https://github.com/KonteiKeisei/kg-transit#readme",
+  "bugs": "https://github.com/KonteiKeisei/kg-transit/issues",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13",
+    "maximum": "13"
+  },
+  "authors": [
+    {
+      "name": "Konte"
+    }
+  ],
+  "esmodules": [
+    "scripts/main.mjs"
+  ],
+  "styles": [
+    "styles/transit.css"
+  ],
+  "languages": [],
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "5.3.3",
+          "verified": "5.3.3"
+        }
+      }
+    ],
+    "recommends": [
+      {
+        "id": "kg-cities",
+        "type": "module",
+        "reason": "Real US city scenes. KG Transit sets up each city's rail network for the scene's era."
+      }
+    ],
+    "requires": [
+      {
+        "id": "calendaria",
+        "type": "module",
+        "reason": "Runs the clock during rides and supplies the weather seen through the windows."
+      }
+    ]
+  }
+}

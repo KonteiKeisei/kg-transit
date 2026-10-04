@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Theme Gallery</title>
+<style>
+  body { margin: 0; padding: 12px; background: #1b1b1b; color: #ddd; font: 12px Helvetica, Arial, sans-serif; }
+  h2 { margin: 18px 0 6px; font-size: 14px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  figure { margin: 0; }
+  figcaption { opacity: 0.7; margin-top: 2px; }
+  canvas { display: block; height: 150px; width: auto; background: #000; }
+</style>
+</head>
+<body>
+<!-- Every theme's textures, drawn flat. URL options: ?tod=day|dusk|night&season=summer|winter|fall
+     &theme=modern,industrial&near=city,dockside&kinds=near,far,tunnel,station,platform -->
+<div id="out"></div>
+<script type="module">
+  import { drawFar, drawNear, drawPlatformAbove, drawStation, drawTunnel } from "../scripts/scenery-art.mjs";
+  import { SCENERY } from "../scripts/catalog.mjs";
+  import { THEMES } from "../scripts/themes.mjs";
+
+  const params = new URLSearchParams(location.search);
+  const tod = params.get("tod") ?? "day";
+  const season = params.get("season") ?? "summer";
+  const sky = params.get("sky") ?? "clear";
+  const themes = params.get("theme")?.split(",") ?? Object.keys(THEMES);
+  const kinds = new Set(params.get("kinds")?.split(",") ?? ["near", "far", "tunnel", "station", "platform"]);
+  const nears = params.get("near")?.split(",") ?? [...new Set(Object.values(SCENERY).filter((s) => s.near).map((s) => s.near))];
+  const fars = params.get("far")?.split(",") ?? [...new Set(Object.values(SCENERY).filter((s) => s.far).map((s) => s.far))];
+  const out = document.getElementById("out");
+
+  const show = (row, label, canvas) => {
+    const fig = document.createElement("figure");
+    fig.append(canvas);
+    const cap = document.createElement("figcaption");
+    cap.textContent = label;
+    fig.append(cap);
+    row.append(fig);
+  };
+  const section = (title) => {
+    const h = document.createElement("h2");
+    h.textContent = title;
+    const row = document.createElement("div");
+    row.className = "row";
+    out.append(h, row);
+    return row;
+  };
+  const later = () => new Promise((r) => setTimeout(r, 0));
+
+  for (const theme of themes) {
+    const t = THEMES[theme];
+    if (kinds.has("tunnel") || kinds.has("station") || kinds.has("platform")) {
+      const row = section(`${t.label}: underground and platforms`);
+      if (kinds.has("tunnel")) {
+        show(row, `tunnel ${t.tunnel}`, drawTunnel(t.tunnel, theme));
+        await later();
+      }
+      if (kinds.has("station")) {
+        show(row, `underground ${t.platform}`, drawStation(t.platform, "Market Square", "#d6312b"));
+        await later();
+      }
+      if (kinds.has("platform")) {
+        show(row, "above ground (near)", drawPlatformAbove(theme, "Riverside", "#1f5fbf", tod, season, sky));
+        await later();
+      }
+    }
+    if (kinds.has("near")) {
+      const row = section(`${t.label}: near scenery, ${tod}, ${season}`);
+      for (const near of nears) {
+        show(row, near, drawNear(near, theme, tod, season, 0, sky));
+        await later();
+      }
+    }
+    if (kinds.has("far")) {
+      const row = section(`${t.label}: far scenery`);
+      for (const far of fars) {
+        show(row, far, drawFar(far, theme, tod, season, 0, sky));
+        await later();
+      }
+    }
+  }
+  document.title = "Theme Gallery (done)";
+</script>
+</body>
+</html>

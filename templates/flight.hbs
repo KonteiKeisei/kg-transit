@@ -1,0 +1,105 @@
+<div class="kg-transit-board-body kgt-flight-body">
+  <header class="origin">
+    <span><i class="fa-solid fa-plane-departure"></i> {{origin.name}} ({{origin.iata}})</span>
+  </header>
+
+  <fieldset>
+    <legend>
+      Who's flying
+      <button type="button" class="kgt-party-button" data-action="wholeParty" data-tooltip="Select every member of the party">
+        <i class="fa-solid fa-people-group"></i> Whole party
+      </button>
+    </legend>
+    <ul class="riders">
+      {{#each riders}}
+        <li class="{{#if short}}short{{/if}} {{#if waived}}waived{{/if}}">
+          <label>
+            <input type="checkbox" name="rider" value="{{id}}" {{#if checked}}checked{{/if}}>
+            <img src="{{img}}" alt="">
+            <span class="name">{{name}}</span>
+          </label>
+          <span class="cash">{{cash}}</span>
+          {{#if checked}}
+            <button type="button" class="waive" data-action="toggleWaive" data-actor-id="{{id}}"
+              data-tooltip="{{#if waived}}Charge the ticket{{else}}Let them fly free{{/if}}">
+              {{#if waived}}Free{{else}}Waive{{/if}}
+            </button>
+          {{/if}}
+        </li>
+      {{else}}
+        <li class="empty">No player characters found.</li>
+      {{/each}}
+    </ul>
+  </fieldset>
+
+  <fieldset>
+    <legend>Destination</legend>
+    <select name="destinationCity">
+      <option value="">Choose a destination city</option>
+      {{#each cities}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
+    </select>
+    {{#if airportsOfCity.length}}
+      <ul class="kgt-airport-choice">
+        {{#each airportsOfCity}}
+          <li><label><input type="radio" name="destination" value="{{iata}}" {{#if selected}}checked{{/if}}>
+            <span class="name">{{name}}</span> <span class="iata">{{iata}}</span></label></li>
+        {{/each}}
+      </ul>
+    {{/if}}
+    <label class="kgt-bags"><input type="checkbox" name="bags" {{#if bags}}checked{{/if}}> Checking bags</label>
+
+    {{#if plan}}
+      <p class="kgt-flight-line"><strong>{{plan.airlineName}} flight {{plan.flightNumber}}</strong>, {{plan.aircraftName}} ({{plan.engines}}), {{plan.miles}} miles</p>
+      <ol class="kgt-steps">
+        {{#each plan.steps}}
+          <li class="where-{{where}}">
+            <span class="step-label">{{label}}</span>
+            <span class="step-detail">{{detail}}</span>
+            <span class="step-time">{{time}}</span>
+          </li>
+        {{/each}}
+      </ol>
+      <p class="eta">Door to door <strong>{{plan.duration}}</strong>, at {{plan.toName}} about <strong>{{plan.arrives}}</strong></p>
+    {{/if}}
+  </fieldset>
+
+  {{#if plan}}
+    <fieldset class="kgt-encounter">
+      <legend><label><input type="checkbox" name="encounter" {{#if encounter.on}}checked{{/if}}> Encounter on the way</label></legend>
+      {{#if encounter.on}}
+        <div class="choice">
+          <span>Scene</span>
+          <select name="encounterScene">
+            <option value="">Choose the encounter's scene</option>
+            {{#each encounter.scenes}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
+          </select>
+        </div>
+        <div class="choice">
+          <span>When</span>
+          <select name="encounterAt">
+            {{#each encounter.points}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}} ({{time}} in)</option>{{/each}}
+          </select>
+        </div>
+        <p class="hint">The trip stops there: the party is moved to the scene and it opens for everyone. A <strong>Continue flight</strong> button (yours alone) finishes the trip when the encounter is done.</p>
+      {{/if}}
+    </fieldset>
+
+    <fieldset class="options">
+      <legend>Coach fare {{plan.fareText}} each, {{total}} total</legend>
+      <div class="choice">
+        <span>Pay from</span>
+        <label><input type="radio" name="payFrom" value="riders" {{#unless payFromParty}}checked{{/unless}}> Each traveller</label>
+        {{#if party}}
+          <label class="{{#if party.short}}short{{/if}}"><input type="radio" name="payFrom" value="party" {{#if payFromParty}}checked{{/if}}> {{party.name}} ({{party.cash}})</label>
+        {{/if}}
+      </div>
+      <p class="hint">The average coach fare of {{plan.fareYear}} for {{plan.miles}} miles, ${{plan.fare}} (the government's fare level, revised twice a year).</p>
+    </fieldset>
+  {{/if}}
+
+  <footer class="form-footer">
+    <button type="submit" {{#unless canFly}}disabled{{/unless}}>
+      <i class="fa-solid fa-plane-departure"></i> Fly
+    </button>
+  </footer>
+</div>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transit Editor Preview</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="../styles/transit.css">
+<style>
+  body { margin: 0; padding: 20px; background: #2a2a2e; color: #e8e6e1; font-family: Signika, "Segoe UI", sans-serif; }
+  .app { width: 680px; height: 720px; display: flex; flex-direction: column; background: #0f0f12; border: 1px solid #444; border-radius: 8px; overflow: hidden; }
+  .app header { padding: 8px 12px; background: #1b1b20; font-weight: 600; border-bottom: 1px solid #333; }
+  .app .window-content { flex: 1; min-height: 0; }
+  input, select, button { font: inherit; color: inherit; background: rgb(255 255 255 / 0.06); border: 1px solid rgb(255 255 255 / 0.15); border-radius: 4px; height: 28px; box-sizing: border-box; }
+  button { cursor: pointer; padding: 0 8px; }
+  input[type=text], select { width: 100%; padding: 0 6px; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.8/handlebars.min.js"></script>
+</head>
+<body>
+<!-- Renders the real network editor (editor.mjs + editor.hbs) with Foundry stubbed out.
+     ?units=mi|ft&placed=0..14&theme=modern|industrial|fantasy|future (the world default)
+     ?city=boston&era=1980s|modern&year=1986: a KG Cities scene with its city network -->
+<!-- City scenes size the scene to the city's whole metro box at 40000 x 30000 px. -->
+<div class="app kg-transit-editor"><header><i class="fa-solid fa-train-subway"></i> Transit network: Karel City</header><div class="window-content" id="content"></div></div>
+<script type="module">
+  const params = new URLSearchParams(location.search);
+  Handlebars.registerHelper("eq", (a, b) => a === b);
+  const template = Handlebars.compile(await (await fetch("/modules/kg-transit/templates/editor.hbs")).text());
+
+  class ApplicationV2 {
+    constructor() { this.rendered = false; }
+    _onFirstRender() {}
+    _onClose() {}
+    async minimize() {}
+    async maximize() {}
+    async close() {}
+    async render() {
+      const content = document.getElementById("content");
+      if (!this.element) {
+        this.element = document.createElement("form");
+        this.element.style.height = "100%";
+        content.append(this.element);
+        this.element.addEventListener("click", (event) => {
+          const target = event.target.closest("[data-action]");
+          if (!target) return;
+          event.preventDefault();
+          this.constructor.DEFAULT_OPTIONS.actions[target.dataset.action]?.call(this, event, target);
+        });
+      }
+      this.element.innerHTML = template(await this._prepareContext());
+      if (!this.rendered) { this.rendered = true; this._onFirstRender(); }
+    }
+  }
+  globalThis.foundry = {
+    applications: { api: { ApplicationV2, HandlebarsApplicationMixin: (Base) => Base, DialogV2: { confirm: async () => confirm("Sure?") } } },
+    utils: { debounce: (fn) => fn }
+  };
+  globalThis.game = { settings: { get: (_m, key) => (key === "theme" ? params.get("theme") ?? "modern" : undefined) } };
+  globalThis.ui = { notifications: { info: (m) => console.log(m), warn: (m) => console.warn(m) } };
+
+  const base = document.createElement("base");
+  base.href = "/";
+  document.head.prepend(base);
+  globalThis.game.modules = { get: () => null };
+
+  const { DEMO } = await import("/modules/kg-transit/scripts/demo-network.mjs");
+  const placed = Number(params.get("placed") ?? 3);
+  let flag = structuredClone(DEMO);
+  flag.stations.forEach((s, i) => { if (i >= placed) Object.assign(s, { x: null, y: null }); });
+  // ?city=boston&era=1980s&year=1986: a KG Cities scene, seeded with the city's network.
+  const city = params.get("city");
+  const cityFlags = city ? { city, era: params.get("era") ?? "modern", year: params.get("year") ? Number(params.get("year")) : undefined, extent: "metro" } : undefined;
+  const scene = {
+    name: city ? `${city} (${cityFlags.era})` : "Karel City",
+    flags: { "kg-cities": cityFlags },
+    dimensions: { sceneRect: { x: 0, y: 0, width: 40000, height: 30000 } },
+    grid: city ? { units: "ft", distance: 250, size: 100 } : { units: params.get("units") ?? "mi", distance: 0.03, size: 100 },
+    tokens: { contents: [
+      { id: "t1", name: "The Party", actor: { type: "group" } },
+      { id: "t2", name: "Mira", actor: { type: "character" } }
+    ] },
+    getFlag: (_m, key) => (key === "network" ? flag : key === "enabled" ? true : undefined),
+    update: async (data) => { flag = data["flags.kg-transit.network"]; console.log("saved", flag); },
+    setFlag: async () => {},
+    sheet: { render: () => alert("Scene settings would open here") }
+  };
+  const layer = { setEditing() {}, onMove: null, cancelPlacing() {}, pickPoint: async () => ({ x: 100 + Math.round(Math.random() * 900), y: 100 + Math.round(Math.random() * 600) }) };
+
+  if (city) {
+    const { cityPreset } = await import("/modules/kg-transit/scripts/city-setup.mjs");
+    const preset = await cityPreset(scene);
+    if (preset) flag = preset.net;
+  }
+  const { NetworkEditor } = await import("/modules/kg-transit/scripts/editor.mjs");
+  const editor = new NetworkEditor({ scene, layer });
+  await editor.render();
+  window.editor = editor;
+</script>
+</body>
+</html>

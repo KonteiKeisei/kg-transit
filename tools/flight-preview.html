@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>KG Transit Flight Preview</title>
+<base href="/">
+<link rel="stylesheet" href="/modules/kg-transit/styles/transit.css">
+<style>
+  body { margin: 0; font: 14px Signika, system-ui, sans-serif; background: #1b1f27; color: #e8ecf2; }
+  main { display: grid; grid-template-columns: 300px 1fr; gap: 20px; padding: 20px; }
+  .controls { display: grid; gap: 10px; align-content: start; }
+  .controls label { display: grid; gap: 4px; }
+  .kg-transit-flight { max-width: 620px; }
+  #calendaria-cinematic { position: fixed; inset: 0; z-index: 10000; display: flex; justify-content: center; transition: opacity 0.8s; }
+  #calendaria-cinematic .bg { position: absolute; inset: 0; background: linear-gradient(180deg, #23305a, #6d7fb3 50%, #c9b38f); }
+  #calendaria-cinematic .date { position: absolute; top: 35%; transform: translateY(-50%); z-index: 3; color: #fff; font-size: 2.4rem; text-shadow: 0 2px 8px #000; }
+  button { padding: 6px 12px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="controls">
+    <label>Aircraft <select id="aircraft"></select></label>
+    <label>Airline <select id="airline"></select></label>
+    <label>Weather <select id="weather">
+      <option>clear</option><option>partly-cloudy</option><option>overcast</option><option>rain</option>
+      <option>thunderstorm</option><option>snow</option><option>blizzard</option><option>fog</option>
+    </select></label>
+    <label>Hour <input id="hour" type="range" min="0" max="23" value="14"></label>
+    <button id="fly">Fly (real time; the GM's controls are at the top)</button>
+    <label>Jump to (after Fly)
+      <span style="display:flex;gap:6px;flex-wrap:wrap">
+        <button data-jump="origin">Departing terminal</button><button data-jump="air">In the air</button><button data-jump="destination">Arriving terminal</button>
+      </span>
+    </label>
+  </div>
+  <div id="sidebar" style="position:fixed;top:0;right:0;bottom:0;width:300px;background:#262b36"></div>
+</main>
+<script>
+  globalThis.Hooks = { on() {}, callAll() {} };
+  // A GM, and a clock that runs at the chosen speed (as the GM's driver would).
+  globalThis.game = { user: { isGM: true }, time: { worldTime: 0, calendar: { timeToComponents: (t) => ({ hour: Math.floor(t / 3600) % 24, minute: Math.floor(t / 60) % 60 }) } }, settings: { get: () => "" } };
+</script>
+<script type="module">
+  import { AIRCRAFT, AIRLINES, nextSkip, planFlight } from "/modules/kg-transit/scripts/flights.mjs";
+  import { rideWeather } from "/modules/kg-transit/scripts/weather.mjs";
+  import { PlaneShow } from "/modules/kg-transit/scripts/plane-show.mjs";
+
+  const $ = (id) => document.getElementById(id);
+  // Calendaria's weather, as the screen reads it every few seconds: the one picked here.
+  globalThis.CALENDARIA = { api: { getCurrentWeather: () => ({ id: $("weather").value }) } };
+  for (const [k, a] of Object.entries(AIRCRAFT)) $("aircraft").append(new Option(a.name, k));
+  for (const [k, a] of Object.entries(AIRLINES)) $("airline").append(new Option(a.name, k));
+
+  // The GM's controls, as the flight controller answers them: speed changes the clock, a skip
+  // plays the stand-in cinematic and jumps.
+  let flight = null;
+  const show = new PlaneShow({
+    setRate: (rate) => { flight = { ...flight, rate }; show.sync(flight); },
+    skip: () => {
+      // To the next step (as the flight controller does), the last one landing the plane.
+      const next = nextSkip(flight.plan, game.time.worldTime - flight.start, flight.encounter);
+      const cine = document.createElement("div");
+      cine.id = "calendaria-cinematic";
+      cine.innerHTML = `<div class="bg"></div><div class="date">Thursday, 13 March 1986</div>`;
+      document.body.append(cine);
+      flight = { ...flight, phase: "skipping" };
+      show.sync(flight);
+      setTimeout(() => {
+        game.time.worldTime = flight.start + next.at;
+        cine.style.opacity = "0";
+        setTimeout(() => cine.remove(), 900);
+        flight = { ...flight, phase: next.key === "arrival" ? "landed" : "flying" };
+        show.sync(flight);
+      }, 2500);
+    }
+  });
+  window.show = show;
+  let last = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    if (flight?.phase === "flying") game.time.worldTime += ((now - last) / 1000) * (flight.rate ?? 1);
+    last = now;
+  }, 250);
+  // Jump the clock to the middle of the trip's first step at one end, or of the flight.
+  document.querySelectorAll("[data-jump]").forEach((b) => b.onclick = () => {
+    if (!flight) return;
+    let t = 0;
+    for (const s of flight.plan.steps) {
+      if (s.where === b.dataset.jump) { game.time.worldTime = flight.start + (t + s.minutes / 2) * 60; return; }
+      t += s.minutes;
+    }
+  });
+  $("fly").onclick = () => {
+    const BOS = { iata: "BOS", size: "hub", lat: 42.3656, lon: -71.0096 }, ORD = { iata: "ORD", size: "hub", lat: 41.9742, lon: -87.9073 };
+    const plan = { ...planFlight(BOS, ORD), aircraft: $("aircraft").value, airline: $("airline").value };
+    game.time.worldTime = +$("hour").value * 3600;
+    flight = { id: String(Math.random()), phase: "flying", rate: 1, start: game.time.worldTime, plan,
+      from: { iata: "BOS", name: "Logan International Airport" }, to: { iata: "ORD", name: "O'Hare International Airport", cityName: "Chicago" } };
+    show.weather = rideWeather($("weather").value);
+    show.sync(flight);
+  };
+</script>
+</body>
+</html>

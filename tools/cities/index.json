@@ -1,0 +1,16 @@
+[
+  { "id": "boston", "name": "Boston", "state": "MA", "center": [-71.0605, 42.3555], "metro": { "center": [-71.135, 42.35], "miles": [34, 24] }, "core": { "center": [-71.0848, 42.3487], "miles": [11.1, 5.6] } },
+  { "id": "new-york", "name": "New York", "state": "NY", "center": [-73.9857, 40.7484], "metro": { "center": [-73.95, 40.73], "miles": [34, 28] }, "core": { "center": [-73.975, 40.735], "miles": [12, 10] } },
+  { "id": "washington", "name": "Washington", "state": "DC", "center": [-77.0365, 38.8977], "metro": { "center": [-77.04, 38.89], "miles": [32, 26] }, "core": { "center": [-77.025, 38.895], "miles": [10, 8] } },
+  { "id": "philadelphia", "name": "Philadelphia", "state": "PA", "center": [-75.1636, 39.9526], "metro": { "center": [-75.16, 39.98], "miles": [32, 28] }, "core": { "center": [-75.16, 39.955], "miles": [9, 7] } },
+  { "id": "baltimore", "name": "Baltimore", "state": "MD", "center": [-76.6122, 39.2904], "metro": { "center": [-76.62, 39.30], "miles": [30, 24] }, "core": { "center": [-76.615, 39.295], "miles": [9, 7] } },
+  { "id": "atlanta", "name": "Atlanta", "state": "GA", "center": [-84.3880, 33.7490], "metro": { "center": [-84.39, 33.77], "miles": [32, 28] }, "core": { "center": [-84.385, 33.765], "miles": [10, 8] } },
+  { "id": "st-louis", "name": "St. Louis", "state": "MO", "center": [-90.1848, 38.6247], "metro": { "center": [-90.25, 38.63], "miles": [32, 26] }, "core": { "center": [-90.215, 38.63], "miles": [10, 7] } },
+  { "id": "detroit", "name": "Detroit", "state": "MI", "center": [-83.0458, 42.3314], "metro": { "center": [-83.10, 42.38], "miles": [32, 24] }, "core": { "center": [-83.06, 42.345], "miles": [10, 7] } },
+  { "id": "chicago", "name": "Chicago", "state": "IL", "center": [-87.6298, 41.8781], "metro": { "center": [-87.73, 41.86], "miles": [32, 32] }, "core": { "center": [-87.645, 41.885], "miles": [10, 9] } },
+  { "id": "san-francisco", "name": "San Francisco", "state": "CA", "center": [-122.4194, 37.7749], "metro": { "center": [-122.33, 37.79], "miles": [32, 26] }, "core": { "center": [-122.44, 37.765], "miles": [8, 7.5] } },
+  { "id": "los-angeles", "name": "Los Angeles", "state": "CA", "center": [-118.2437, 34.0522], "metro": { "center": [-118.33, 34.04], "miles": [36, 26] }, "core": { "center": [-118.30, 34.06], "miles": [14, 9] } },
+  { "id": "las-vegas", "name": "Las Vegas", "state": "NV", "center": [-115.1728, 36.1147], "metro": { "center": [-115.17, 36.14], "miles": [30, 26] }, "core": { "center": [-115.16, 36.14], "miles": [9, 8] } },
+  { "id": "austin", "name": "Austin", "state": "TX", "center": [-97.7431, 30.2672], "metro": { "center": [-97.75, 30.29], "miles": [30, 28] }, "core": { "center": [-97.745, 30.28], "miles": [9, 8] } },
+  { "id": "miami", "name": "Miami", "state": "FL", "center": [-80.1918, 25.7617], "metro": { "center": [-80.22, 25.80], "miles": [28, 30] }, "core": { "center": [-80.19, 25.78], "miles": [9, 9] } }
+]

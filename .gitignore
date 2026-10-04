@@ -1,0 +1,12 @@
+node_modules/
+media/
+assets/Corel Auto-Preserve/
+dist/
+tools/cities/cache/
+.cache/
+tools/flight-src/
+tools/recordings/
+__pycache__/
+assets/flight/liveries/
+assets/80sPlaneInterior.png
+assets/airport-terminal-*.zip

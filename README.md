@@ -1,0 +1,299 @@
+# KG Transit
+
+Build subway, tram and steam railway lines on any Foundry scene, place their stops on the map, and let your party ride them. A ride runs game time in real time: the party sits in the car while the city, countryside or tunnels stream past the windows, the weather from Calendaria falls outside, and their token travels the line on the map until the train pulls in.
+
+- **Requires:** Foundry VTT v13 and the **Calendaria** module. Fares and party features use the **dnd5e** system (5.3.3).
+- **Ships with:** four themes (Modern, Industrial, Fantasy, Future), a subway car and a steam coach interior, 17 kinds of scenery, underground and above-ground platforms, and a sample network to start from.
+- **Real cities:** on a **KG Cities** scene, the city's real rail network is set up for you, as it ran in the scene's era (the 1980s or today). See [Real cities](#real-cities-kg-cities).
+- **Sounds that ship with it:** the subway ride loop (used by the city networks), the jet engines and the airport terminal's ambiance. For your own networks you choose the sound for each car in the module settings.
+- **Guides:** the [KG Transit wiki](https://github.com/KonteiKeisei/kg-transit/wiki) walks through building networks for fantasy, modern and futuristic settings.
+
+> **Works with KG Cities.** KG Cities is a good module on its own: it turns real US cities into Foundry scenes from OpenStreetMap, in the 1980s or today. With KG Transit beside it, those scenes come alive: each city scene gets **its real metro set up automatically** for its era, and the city's airports become **flights between cities**, curb to curb, with the airport terminal, the jet bridge and the plane. Neither module needs the other; together they make a whole country you can travel. See [Real cities](#real-cities-kg-cities) and [Air travel between cities](#12-air-travel-between-cities).
+
+---
+
+## Contents
+
+1. [Install](#install)
+2. [Real cities (KG Cities)](#real-cities-kg-cities)
+3. [Set the scene's scale first](#1-set-the-scenes-scale-first)
+4. [Open the network editor](#2-open-the-network-editor)
+5. [Lines](#3-lines)
+6. [Stops and placing them](#4-stops-and-placing-them)
+7. [Transfer stations](#5-transfer-stations)
+8. [Scenery between stops](#6-scenery-between-stops)
+9. [Themes](#7-themes)
+10. [Platforms: underground or above ground](#8-platforms-underground-or-above-ground)
+11. [Network settings: name, badge, fare, party token](#9-network-settings)
+12. [Riding](#10-riding)
+13. [During a ride](#11-during-a-ride)
+14. [Air travel between cities](#12-air-travel-between-cities)
+15. [Module settings](#module-settings)
+16. [How travel time is worked out](#how-travel-time-is-worked-out)
+17. [Weather, time of day and seasons](#weather-time-of-day-and-seasons)
+18. [Troubleshooting](#troubleshooting)
+19. [For developers](#for-developers)
+
+---
+
+## Install
+
+1. Put the `kg-transit` folder in your Foundry `Data/modules` folder (or install it from its manifest).
+2. Install and enable **Calendaria** as well. KG Transit will not run without it.
+3. Enable **KG Transit** in your world's module settings.
+4. In **Configure Settings > KG Transit**, pick a ride sound for each car (optional, see [Module settings](#module-settings)).
+
+## Real cities (KG Cities)
+
+**KG Cities** makes scenes of real US cities from OpenStreetMap, set in the 1980s or today. KG Transit recognises those scenes and gives each one the city's own rail network: the real lines in their real colours, every station in its real place on the map, transfers where the lines meet, tunnels, elevated track and bridges where they really are, and the fare of the time.
+
+- **It happens by itself.** The first time the GM views a city scene that has no network yet, the network is set up and turned on, and a message says so. (Turn this off with **Set up city networks** in the module settings; the **Transit network** button then sets it up when you first open the editor.)
+- **The era decides the network.** A 1980s scene gets the network as it ran in its year (1986 unless KG Cities says otherwise): lines and stations not yet opened are left out, and lines and stations that had other names then get them. A modern scene gets today's network.
+- **No scale to set.** City scenes are drawn at real scale, so travel times are right from the start.
+- **Everything stays editable.** Rename, recolour, re-theme, add or remove stops as with any network. The editor shows which city and year the network came from; **Reset to city network** puts the original back (keeping your party token).
+- **Sound and car art.** City networks use the shipped subway ride sound. In the network settings, each car type can have this network's own **Sound** and **Interior** image, for city-specific cars: drop in your own art (1672 x 941, transparent windows) and every ride on that city's network uses it.
+
+| City | Modern | 1980s (1986) |
+|---|---|---|
+| Boston | MBTA: Red (Ashmont and Braintree), Orange, Blue, Green B, C, D, E, Mattapan | The exact 1986 MBTA, hand-built: the Washington Street Elevated (Orange Line to Forest Hills via Dudley), Green E to Heath Street, 75 cents |
+| New York | NYC Subway (every service, branches split), Staten Island Railway, PATH | The stations open in 1986 (no 63rd Street or Archer Avenue lines, no Second Avenue Subway, no Hudson Yards), no W or Z, $1 |
+| Washington | Metrorail: Red, Orange, Blue, Yellow, Green, Silver | Red, Orange, Blue and Yellow as far as they had been built; National Airport under its old name |
+| Philadelphia | Market–Frankford, Broad Street and Broad–Ridge Spur, Norristown High Speed Line, PATCO | The same lines, period names |
+| Baltimore | Metro SubwayLink, Light RailLink | The Metro as built by 1986 (Charles Center to Reisterstown Plaza) |
+| Atlanta | MARTA: Red, Gold, Blue, Green | The North–South and East–West lines as far as they ran in 1986 |
+| Chicago | CTA 'L': Red, Blue, Brown, Green, Orange, Pink, Purple, Yellow | The routes of the time under their 1986 names; no Orange or Pink line yet |
+| San Francisco | BART (all lines), Muni Metro | BART's four routes of the time, Muni Metro J, K, L, M, N |
+| Miami | Metrorail (Green, Orange), Metromover loops | Metrorail and the original downtown Metromover loop |
+| St. Louis, Detroit, Los Angeles, Las Vegas, Austin | MetroLink; People Mover and QLine; Metro Rail; the Monorail; CapMetro Rail | No rail transit yet in 1986: the editor says when the first line opened. Detroit's People Mover appears from 1987 on. |
+
+**How good is it?** Stations, their positions and the routes come from OpenStreetMap; opening years from Wikidata. Boston 1986 is exact. For the other cities the 1980s network is the modern one with later lines and stations taken out, so service patterns that have changed since (Chicago's routes were rearranged in 1993, for example) follow today's routes. Stations that closed before today are not included, except in Boston. Open the editor to adjust anything for your table.
+
+## 1. Set the scene's scale first
+
+Travel times come from the distance between stops on the map, so the scene needs to know how big its squares are. **Do this before placing stops.**
+
+1. Open the scene's settings (right-click the scene in the navigation bar, **Configure**, then the **Grid** tab).
+2. Set **Grid Units** to `mi` (miles). New scenes use `ft`, which makes every trip take a minute.
+3. Set **Grid Scale** to how many miles one grid square covers. A city map might be 0.1 mi per square; a regional map 1 mi or more.
+4. Save.
+
+Until the grid is in miles, the network editor shows a warning with a **Scene settings** button, and placing a stop reminds you.
+
+## 2. Open the network editor
+
+As GM, select the **Journal Notes** controls on the left of the canvas and click **Transit network** (the train icon). This one control does everything:
+
+- the first time on a scene it turns transit on and opens the editor with a **starter network**: four sample lines, every kind of train, transfers between them, and all stops waiting to be placed;
+- after that it opens the editor for that scene.
+
+Each scene has its own network. To hide a network, open the network settings (the summary line near the top) and use **Turn off on this scene**; its lines are kept for when you turn it back on.
+
+Every change in the editor saves straight away.
+
+## 3. Lines
+
+Lines are listed down the left of the editor, each with its type and how many of its stops are placed. Click one to edit it, or **New line** to add one.
+
+Across the top of the selected line:
+
+| Field | What it does |
+|---|---|
+| **Name** | The line's name, shown on the map, in the ride and in chat (for example "Central Line"). |
+| **Colour** (round swatch) | Click to pick any colour for the line. |
+| **Type** | The train: **Metro**, **Light rail**, **Tram**, **Express** (all ride in the subway car) or **Steam** (rides in the steam coach, with engine smoke past the windows). The type also sets the speed and how long trains wait at stops. |
+| **Theme** | The look of everything on this line. **Inherit** uses the scene's theme (see [Themes](#7-themes)). |
+| **Delete** (bin) | Deletes the line. Stops that were only on this line go with it. |
+
+The sample lines are there to be changed: rename them, recolour them, delete what you don't need.
+
+## 4. Stops and placing them
+
+The selected line's route runs down the editor like a line diagram: a track in the line's colour with a circle for each stop, solid once the stop is on the map, faded while it isn't. Each stop has:
+
+- a **grip** (dotted handle): drag it up or down to change the stop's place in the line;
+- its **name**: click and type to rename;
+- **Place** (blue crosshair): the editor tucks away; click the map where the stop is. Right-click or Esc cancels. Once placed it shows a green pin; click it again to move the stop;
+- **Stop options** (sliders icon): transfers to other lines, the stop's theme and its platform (see below);
+- **Remove** (x): takes the stop off this line (and deletes it if no other line uses it).
+
+**Add stop** adds a stop to the end of the line, ready to name.
+
+The footer shows how many stops are on the map. **Place next** places every unplaced stop in turn: click the map once per stop, in line order, and press Esc or right-click to stop. While the editor is open you can also **drag station icons** on the map to fine-tune them.
+
+A stop that is not placed can still be ridden to; its timing uses a default, and the party's token waits until the train reaches a placed stop.
+
+## 5. Transfer stations
+
+A transfer station is a stop on more than one line. Riders change trains there automatically.
+
+1. Click the stop's **Stop options** button (sliders icon). A row of toggles opens, one per other line, in each line's colour.
+2. Click each line the stop should also be on (click again to take it off). It is added to the end of that line; open that line and drag it into place.
+
+On the map, a transfer station's icon is split between its lines' colours. In the editor, small labels beside a stop's name show which other lines it is on. Change time is set by **Transfer** in the network settings (4 minutes by default).
+
+## 6. Scenery between stops
+
+On the track between each pair of stops is the scenery the riders see on that stretch, and its travel time:
+
+**Underground:** Tunnel (theme), Tunnel: brick, Tunnel: rock cave, Tunnel: cyber. **Tunnel (theme)** is the theme's own tunnel: concrete (Modern), brick (Industrial), rock (Fantasy), cyber (Future). The others always look the same, lit by the theme's lamps.
+
+**Urban:** City, Downtown towers, Old town, Fantasy city, Elevated over the city, Industrial, Dockside.
+
+**Open:** Suburbs, Countryside, Forest, Mountains, Coast, Bridge over water.
+
+Outdoors, each stretch has its own buildings or landscape beside the track and a skyline or horizon behind it, drawn in the stretch's theme: City in Industrial is brick tenements, gas lamps and smokestacks; in Future it is neon towers and holo signs.
+
+The **minutes** box is optional. Leave it empty and the time is worked out from the map distance (the grey number shows that estimate). Type a number to set it yourself, for example when the line curves a long way between two close stops.
+
+## 7. Themes
+
+A theme sets the era and look of everything the riders see, and the style of the station icons and the ride window:
+
+| Theme | Look |
+|---|---|
+| **Modern** | Concrete and tile, sodium street lamps, billboards, glass towers. Rounded-square station icons. |
+| **Industrial** | 1880s to 1920s, a WW1-era feel: brick tenements and mills, smokestacks and gasometers, gas lamps, telegraph poles, painted wall adverts, riveted iron, Victorian tiled stations. Brass and enamel round icons, a sepia ride window. |
+| **Fantasy** | Industrial fantasy: rail still runs, but through timber and stone towns, forges, windmills, castles and sailing ships, lit by lanterns, with stone-vaulted stations. Shield icons, a parchment ride window. |
+| **Future** | Neon skylines, holo signs, capsule towers, wind turbines and solar fields, glowing cyber tunnels and neon stations. Hexagon icons, a neon ride window. |
+
+A theme can be set at four levels. The most specific one wins:
+
+1. **World**: **Configure Settings > KG Transit > Default theme**. Every scene uses it unless told otherwise.
+2. **Scene**: the **Theme** buttons near the top of the network editor. **World default** follows the world setting.
+3. **Line**: the **Theme** list beside the line's type. **Inherit** follows the scene.
+4. **Stop**: in the stop's options (sliders icon). It covers the stop's platform and the track either side of it, so you can have, say, one Fantasy old-town stop on a Modern line. Between two stops with their own themes, the stop the train is heading for wins.
+
+Lines and stops with their own theme show its icon in the editor, and stops show it as a label beside their name. At a transfer station, the platform looks like the line being boarded. The sample network's Valley Railway is set to Industrial to show a line theme at work.
+
+## 8. Platforms: underground or above ground
+
+Each stop has a platform setting in its options (sliders icon):
+
+- **Auto** (the default): underground when a tunnel reaches the stop, above ground otherwise. The editor shows which one auto picks.
+- **Underground**: the train pulls into a station under the street, its name on the wall: tiled (Modern), Victorian brick (Industrial), stone vault (Fantasy) or neon (Future).
+- **Above ground**: an open-air platform with a canopy, benches, lamps and the station's name board, and the skyline of that stretch beyond it, with the weather falling outside. Each theme has its own: steel and glass, cast iron and timber with gas lamps, carved timber with lanterns, or glass and light strips.
+
+A stop set to anything but Auto shows it as a label in the editor.
+
+## 9. Network settings
+
+The network's settings are summed up in one line near the top of the editor (name, badge, fare, transfers, theme, party token). Click it to open them:
+
+| Field | What it does |
+|---|---|
+| **Name** | The network's name; also who "speaks" the ride messages in chat. |
+| **Badge** | One or two letters shown on every station icon (for example M, U, R). |
+| **Fare** | Amount and coin (cp, sp, ep, gp, pp) per rider per trip, whatever the distance. 0 means free. |
+| **Transfer** | Minutes to change trains at a transfer station. |
+
+| **Sound / Interior** (one row per car type) | Optional. This network's own ride sound and car interior image for that car, overriding the module settings. City networks come with the subway sound filled in. Use the file buttons to browse. |
+| **Party token** | Optional. Choose a token on this scene (a dnd5e party/group token, or any token). When set, that token rides the line on the map whenever the party boards, wherever it is standing, and its members are ticked as riders. Leave it as **None** and the module uses whatever party or character tokens are standing at the boarding station. |
+
+## 10. Riding
+
+1. **Hover** a station icon to see its name and lines.
+2. As GM, **double-click** a station to open **Board**.
+3. **Riders** are ticked for you: the party token's members (if set), or the party and characters standing at the station. Untick anyone staying behind. **Waive** lets someone ride free.
+4. Pick the **destination** from the list (grouped by line), or click its icon on the map. You'll see the route, any changes, the trip length and the arrival time.
+5. If there is a fare, choose who pays: **each rider** or the **party's funds** (the group actor's coins). Change is given in the fewest coins.
+6. Choose who sees the ride: **Riders only** (other players get a small banner) or **Everyone**.
+7. Click **Board**. A chat card records the trip and fares, and the game unpauses.
+
+## 11. During a ride
+
+- **Time runs in real time**: one game second per real second. Pausing the game pauses the train, the clock and the token. If you move time forward yourself, the train jumps ahead to match.
+- **The ride window** opens beside the sidebar for everyone who sees the ride, with the car interior, the scenery outside, the line, the clock and the arrival time. The expand button makes it full screen. Its look follows the theme of where the train is: brass and serif type for Industrial, parchment for Fantasy, neon for Future, with a matching colour wash over the car.
+- **On the map**, the party token travels the line from stop to stop, easing in and out of stations. Players' views follow it at a closer zoom and pull back out when the trip ends; the GM's view does the same while one of the ride's tokens is selected.
+- **GM buttons** in the ride window:
+  - **Arrive**: the rest of the trip passes over 10 seconds.
+  - **Next stop**: the riders get off at the next station.
+  - **End**: stop now, at the stop the train is at or heading for, with no more time passing.
+- **On arrival**, the tokens settle at the destination and a chat card records it.
+- If Calendaria's real-time clock was running, it is paused for the ride and restarted afterwards.
+
+## 12. Air travel between cities
+
+On a **KG Cities** scene, the city's airports of 1986 are drawn on the map in violet: the terminals as buildings, the airfield's edge dashed. Hover one for its card. The cities and their airports: Boston (Logan), New York (JFK, LaGuardia, Newark), Washington (National, Dulles), Baltimore (BWI, which serves Washington too), Philadelphia, Atlanta (Hartsfield), Chicago (O'Hare, Midway), Detroit (Metro, City), St. Louis (Lambert), Miami (Miami, Fort Lauderdale), Austin (Robert Mueller), Las Vegas (McCarran), Los Angeles (LAX, Burbank, Long Beach), San Francisco (SFO, Oakland, San Jose).
+
+**Booking.** As GM, **click an airport** to book a flight from it.
+
+1. **Who's flying:** tick the travellers, or **Whole party** for every member of the party at once. **Waive** lets someone fly free.
+2. **Destination:** choose a destination city (every other city with an airport), then one of its airports (a city with one airport has it chosen for you). **Checking bags** adds the ticket counter and the baggage carousel.
+3. The flight appears: the airline and aircraft of the day for that route (Eastern, Delta, TWA, Pan Am, United, American, Northwest and others; the 747, DC-10, L-1011, A300 and 767), the distance, and every step curb to curb with its time: through the airport (a metal detector and a walk to the gate in 1986, quicker at small airports), boarding, taxi and takeoff, the flight (the jet stream speeds eastbound flights), taxi in, off the plane, baggage claim.
+4. **Fare:** the average coach fare of the period for that distance, the government's fare level of 1986 (it changed every six months), converted to coins by the **Plane tickets** setting. Pay from each traveller or the party's funds.
+5. **Encounter on the way** (optional): pick one of your scenes and when it happens: in the departing airport, on the plane before takeoff, during the flight, on the plane after landing, or in the arriving airport.
+6. **Fly.**
+
+**The flight runs in real time**, like a ride: one game second per real second, from the curb at one end to the curb at the other, so the table can talk and play the trip out. The game unpauses for it, and pausing stops the clock. Everyone sees the plane from the side in its airline's tail colour (or its own livery, from your **Plane liveries folder**), buffeted by the weather (rough air and rain in storms, snow, lightning), the cabin in a window in the corner with the sky going by its portholes, the clock and the arrival time, and the step of the trip (curb to gate, boarding, in the air, baggage claim). The sky follows the hour, so dusk falls on the way, and after dark the plane flies with its lights on: the cabin windows lit warm, the red navigation light on the wingtip and the white one on the tail, the red beacons flashing top and bottom, the white strobes double-flashing, and the logo light on the fin (your own liveries light up too). The engines roar throughout. The flight screen leaves the sidebar free, so chat works all the way.
+
+**On the ground** (from the curb through boarding to takeoff, and from landing through the jet bridge to the baggage carousel) the screen is that airport's own 1980s terminal instead (and the jet bridge while boarding and getting off), full screen and still: its gate area, the tarmac out of the windows by day or at dusk, and the weather falling past the glass (rain with drops running down it, snow, fog, lightning). The jets are heard through the glass under the terminal's ambiance. Once the plane is in the air the screen fades to black and up on the flight, with the cabin window; after landing it fades through black to the arriving terminal. The status line shows each step and the time it has left ("Boarding · 14 min left"), and the arrival time stays top right.
+
+**The GM's controls** at the top of the flight screen:
+
+- **Speed** ×1, ×2, ×5, ×10, ×30, ×60: the clock (and with it the weather) runs faster, eased in. The plane and the clouds never speed up.
+- **Skip to** the next step: Skip to boarding, to taxi, to takeoff, to landing, to the gate, to baggage claim, to arrival (the button always names the step after this one). Calendaria's time-skip cinematic plays for everyone for the time skipped, then the trip carries on in real time. When an encounter comes before the next step, the button is **Skip to encounter** and stops there, so a skip never passes it.
+
+Behind the flight, from takeoff, the destination city's scene is found (one of that city and era whose map covers the airport) or generated. Halfway through the flight the weather changes to the destination's: Calendaria rolls new weather for the destination scene's climate zone, and from then on the sky, the clouds and the arrival terminal show it (before that, it is the departure city's). At the end the travellers' tokens move to the arrival terminal, the scene opens for everyone with that weather, and every view centres on the party.
+
+**Encounters.** With an encounter, the trip stops at its point: the party's tokens move to your scene and it opens for everyone. When the encounter is done, the GM clicks **Continue flight** at the top of the screen, and the trip carries on from where it stopped.
+
+## Module settings
+
+**Configure Settings > KG Transit:**
+
+| Setting | Scope | What it does |
+|---|---|---|
+| Set up city networks | World | On a KG Cities scene, set up the city's real network the first time the scene is viewed. |
+| Default theme | World | The theme every scene uses unless the scene, a line or a stop picks its own. See [Themes](#7-themes). |
+| Subway car: ride sound | World | Sound file looped during rides in the subway car. Empty means silent. |
+| Steam coach: ride sound | World | The same for the steam coach. |
+| Subway car / Steam coach: interior image | World | Optional replacement interior art. It must be 1672 x 941 px with **transparent windows**, looking down the car at its end door. Empty uses the built-in art. |
+| Plane liveries folder | World | Optional. A folder of your own airline liveries named `<airline>-<plane>.webp` or `.png` (for example `united-dc10.webp`). A flight uses its airline's livery when there is one, otherwise the white plane with its tail in the airline's colour. |
+| Plane tickets: copper per dollar | World | What a dollar of airfare costs, in copper. 1000 (the default) makes a dollar one platinum piece, as the city fares count it. |
+| Ride sound volume | Each player | Volume of the ride sound (and the jet's engines in flight). |
+| Terminal ambiance volume | Each player | The airport terminal heard while a flight is on the ground. 50% by default. |
+| Station icon size | Each player | Size of the station icons on the map, in screen pixels. |
+
+The ride sound fades in when the ride starts, switches if the riders change between a subway and a steam line, dips at stops, and fades out on arrival.
+
+## How travel time is worked out
+
+For each stretch without a minutes value:
+
+```
+time = straight-line map distance (in the scene's grid units, converted to km) / train speed
+```
+
+Speeds and stops: Metro 36 km/h and 30 s, Light rail 28 km/h and 25 s, Tram 16 km/h and 20 s, Express 60 km/h and 40 s, Steam 40 km/h and 60 s. Each stretch takes at least 45 seconds. Changing trains adds the network's transfer time.
+
+Grid units understood: mi, km, m, yd, ft (and their full names). Anything else is treated as feet.
+
+## Weather, time of day and seasons
+
+- **Weather** comes from Calendaria's current weather: clear, partly cloudy, cloudy, overcast and stormy skies; rain, sleet and snow at their strengths, streaming past the windows with drops running down the glass; fog; and lightning in thunderstorms. Underground, the weather fades out.
+- **Time of day** from the game clock: day, dusk or night (lit windows, street lamps, gas lamps and lanterns in the older themes, neon in the Future theme, stars on clear nights).
+- **Season** from the calendar month: autumn colours in October and November, bare trees and snowy roofs from December to March. Falling snow always brings the winter look.
+
+## Troubleshooting
+
+- **Every trip takes about a minute per stop.** The scene's grid is still in feet. See [step 1](#1-set-the-scenes-scale-first).
+- **No Transit network button.** It is in the Journal Notes controls, for GMs only.
+- **Station icons don't show.** They fade out when zoomed far out; zoom in. Stops that are not placed have no icon: open the editor and click **Place**.
+- **"No line connects these stops."** The two stops are on lines with no transfer station between them. Add a transfer (step 5).
+- **The token doesn't move.** It needs a party token (set in the editor, or standing at the boarding station), and the stops on the route must be placed on this scene.
+- **A stop is underground but should be outside (or the other way round).** Its platform is on Auto, which follows the tunnels. Open the stop's options and set Platform.
+- **A city scene has no network.** Check **Set up city networks** is on, or open the editor with the **Transit network** button. The editor says if the city had no rail line in the scene's year. If the scene had a network before (the sample one, say), use **Use city network** in the editor.
+- **No sound.** Pick a ride sound for the car in the module settings, and check the Environment volume in Foundry's audio settings.
+
+## For developers
+
+- Run the tests with `npm test` (Node 20 or later).
+- Preview the ride and the station icons outside Foundry: `python tools/preview-server.py 8766`, then open `http://localhost:8766/modules/kg-transit/tools/preview.html?from=a&to=l` or `tools/icons-preview.html`. Add `&theme=industrial` (or fantasy, future) to see a theme. `tools/themes-preview.html` shows every theme's scenery, tunnels and platforms side by side, and `tools/editor-preview.html` the network editor. Stop ids are in `scripts/demo-network.mjs`.
+- `python tools/key-interior.py` rebuilds the keyed interiors from `assets/*-interior-source.png` (green-screen windows).
+- City networks are built from OpenStreetMap and Wikidata by `python tools/cities/build.py` (all cities, or name some: `python tools/cities/build.py boston chicago`). Downloads are cached in `tools/cities/cache/`; `--refresh` fetches them again. `tools/icons-preview.html?city=new-york` draws a city's network over its metro area, and `tools/editor-preview.html?city=boston&era=1980s` opens the editor on it.
+- Airports: `node tools/build-airports.mjs [IATA]` builds `data/airports.json` from `tools/airports/airports.json` (outlines and terminals from OpenStreetMap, cached in `.cache/`). `tools/flight-preview.html` plays a flight and the cabin preview outside Foundry, with a stand-in for Calendaria's cinematic. `python tools/flight-art.py tools/flight-src` cuts the plane side views and the cabin out of their source images. Airline liveries (art you have the right to use) go in `tools/flight-src/liveries/<airline>-<aircraft>.png` or `.jpg` (keys from `scripts/flights.mjs`, e.g. `united-dc10.jpg`); `python tools/flight-art.py tools/flight-src liveries --out <folder>` cuts just those into a folder of your own (point the **Plane liveries folder** setting at it), and a flight uses its airline's livery when there is one.
+- To change the module with an AI assistant, start with [AGENTS.md](AGENTS.md).
+
+## License and credits
+
+The code is under the [MIT License](LICENSE). The rail network and airport data (`data/cities`, `data/airports.json`) is derived from OpenStreetMap, © OpenStreetMap contributors, under the [Open Database License](DATA-LICENSE.md); opening dates from Wikidata (CC0). Airline liveries are not shipped: yours go in the folder set in the module settings. Airline names and colours belong to their owners; KG Transit is not affiliated with any of them. See [CREDITS.md](CREDITS.md).

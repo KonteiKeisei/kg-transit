@@ -1,0 +1,82 @@
+<div class="kg-transit-board-body">
+  <header class="origin">
+    <span class="lines">
+      {{#each originLines}}<span class="kg-transit-dot" style="--line:{{color}}"></span>{{name}} {{/each}}
+    </span>
+  </header>
+
+  <fieldset>
+    <legend>Riders</legend>
+    <ul class="riders">
+      {{#each riders}}
+        <li class="{{#if short}}short{{/if}} {{#if waived}}waived{{/if}}">
+          <label>
+            <input type="checkbox" name="rider" value="{{id}}" {{#if checked}}checked{{/if}}>
+            <img src="{{img}}" alt="">
+            <span class="name">{{name}}</span>
+          </label>
+          {{#unless free}}
+            <span class="cash">{{cash}}</span>
+            {{#if checked}}
+              <button type="button" class="waive" data-action="toggleWaive" data-actor-id="{{id}}"
+                data-tooltip="{{#if waived}}Charge the fare{{else}}Let them ride free{{/if}}">
+                {{#if waived}}Free{{else}}Waive{{/if}}
+              </button>
+            {{/if}}
+          {{/unless}}
+        </li>
+      {{else}}
+        <li class="empty">No player characters found.</li>
+      {{/each}}
+    </ul>
+  </fieldset>
+
+  <fieldset>
+    <legend>Destination</legend>
+    <select name="destination">
+      <option value="">Choose a stop, or click one on the map</option>
+      {{#each groups}}
+        <optgroup label="{{label}}">
+          {{#each options}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
+        </optgroup>
+      {{/each}}
+    </select>
+
+    {{#if trip}}
+      <ol class="route">
+        {{#each trip.legs}}
+          <li style="--line:{{color}}">
+            <span class="leg-label">{{label}}</span>
+            <span class="leg-stops">{{from}} to {{to}}, {{stops}} stop{{#unless (eq stops 1)}}s{{/unless}}</span>
+          </li>
+        {{/each}}
+      </ol>
+      <p class="eta"><strong>{{trip.duration}}</strong>, arriving about <strong>{{trip.arrives}}</strong></p>
+    {{/if}}
+    {{#if noRoute}}<p class="short">No line connects these stops.</p>{{/if}}
+  </fieldset>
+
+  <fieldset class="options">
+    <legend>{{#if hasFare}}Fare {{fare}} each, {{total}} total{{else}}Ride{{/if}}</legend>
+    {{#if hasFare}}
+      <div class="choice">
+        <span>Pay from</span>
+        <label><input type="radio" name="payFrom" value="riders" {{#unless payFromParty}}checked{{/unless}}> Each rider</label>
+        {{#if party}}
+          <label class="{{#if party.short}}short{{/if}}"><input type="radio" name="payFrom" value="party" {{#if payFromParty}}checked{{/if}}> {{party.name}} ({{party.cash}})</label>
+        {{/if}}
+      </div>
+    {{/if}}
+    <div class="choice">
+      <span>Show the ride to</span>
+      <label><input type="radio" name="showTo" value="riders" {{#unless showToAll}}checked{{/unless}}> Riders only</label>
+      <label><input type="radio" name="showTo" value="all" {{#if showToAll}}checked{{/if}}> Everyone</label>
+    </div>
+  </fieldset>
+
+  <footer class="form-footer">
+    <button type="submit" {{#unless canBoard}}disabled{{/unless}}>
+      <i class="fa-solid fa-train-subway"></i> Board
+    </button>
+  </footer>
+</div>
