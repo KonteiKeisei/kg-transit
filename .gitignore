@@ -10,3 +10,4 @@ __pycache__/
 assets/flight/liveries/
 assets/80sPlaneInterior.png
 assets/airport-terminal-*.zip
+.claude/

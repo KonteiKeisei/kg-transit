@@ -38,7 +38,9 @@ Build subway, tram and steam railway lines on any Foundry scene, place their sto
 
 ## Install
 
-1. Put the `kg-transit` folder in your Foundry `Data/modules` folder (or install it from its manifest).
+1. In Foundry's **Add-on Modules > Install Module**, paste this manifest URL and click **Install**:
+   `https://github.com/KonteiKeisei/kg-transit/releases/latest/download/module.json`
+   (or download `kg-transit.zip` from the [latest release](https://github.com/KonteiKeisei/kg-transit/releases/latest) and extract it into `Data/modules`).
 2. Install and enable **Calendaria** as well. KG Transit will not run without it.
 3. Enable **KG Transit** in your world's module settings.
 4. In **Configure Settings > KG Transit**, pick a ride sound for each car (optional, see [Module settings](#module-settings)).
