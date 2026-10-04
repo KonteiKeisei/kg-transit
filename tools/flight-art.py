@@ -4,8 +4,9 @@
 # - the module's plane side views (assets/Planes.png, or planes-sheet.webp in the folder), white,
 #   nose to the left, on green, one above the other in this order: 747, DC-10, L-1011, 767, A300
 #   (a sixth, if there, is left out);
-# - the cabin with green-screen windows: assets/80sPlaneInterior-realistic.png (kept with the
-#   module), else cabin.webp in the folder;
+# - the cabin with green-screen windows: assets/80sPlaneInterior-realistic2.png (kept with the
+#   module; the first version, -realistic.png, if there is no second), else cabin.webp in the folder;
+#   "cabin" as the first argument keys only the cabin;
 # - optionally liveries/<airline>-<aircraft>.png or .jpg on white (an airline's own paint, e.g.
 #   united-dc10.jpg; the airline and aircraft keys of scripts/flights.mjs), cut into
 #   assets/flight/liveries/ as WebP. Only use livery art you have the right to use.
@@ -15,7 +16,7 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
-src = Path(sys.argv[1]) if len(sys.argv) > 1 and not sys.argv[1].startswith("-") and sys.argv[1] != "liveries" else ROOT / "tools" / "flight-src"
+src = Path(sys.argv[1]) if len(sys.argv) > 1 and not sys.argv[1].startswith("-") and sys.argv[1] not in ("liveries", "cabin") else ROOT / "tools" / "flight-src"
 out = Path(__file__).resolve().parent.parent / "assets" / "flight"
 out.mkdir(parents=True, exist_ok=True)
 
@@ -149,7 +150,7 @@ def sheet():
 
 
 def cabin():
-    kept = ROOT / "assets" / "80sPlaneInterior-realistic.png"
+    kept = next((p for p in (ROOT / "assets" / f"80sPlaneInterior-realistic{n}.png" for n in ("2", "")) if p.exists()), ROOT / "assets" / "80sPlaneInterior-realistic.png")
     im = Image.open(kept if kept.exists() else src / "cabin.webp").convert("RGB")
     # Green screen: how green each pixel is beyond its red and blue. Strongly green goes clear,
     # the edge fringe partly, with the green spill taken out of what stays.
@@ -165,6 +166,9 @@ def cabin():
 # "liveries" cuts only the liveries; --out <folder> puts them there instead of the module (your
 # own Foundry data folder, set as the "Plane liveries folder" setting, keeps them out of the module).
 args = sys.argv[2:]
+if sys.argv[1:2] == ["cabin"]:
+    cabin()
+    sys.exit()
 livery_out = Path(args[args.index("--out") + 1]) if "--out" in args else out / "liveries"
 if "liveries" not in args:
     sheet()

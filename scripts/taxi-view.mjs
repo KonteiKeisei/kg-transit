@@ -65,6 +65,41 @@ export function cabinFrame(w, h) {
   };
 }
 
+/** Takeoff.ogg: how far into the recording the roll starts (its spool-up), and where it starts to fade. */
+export const TAKEOFF_SOUND_LEAD = 2;
+const TAKEOFF_SOUND_FADES = 56;
+/** Landing.ogg: the touchdown, so many seconds in. It lines up with the start of the rollout. */
+export const TOUCHDOWN_AT = 21;
+
+/**
+ * What the cabin should sound like, from the step and where the one-shot recordings are:
+ * { taxi, jets } loop levels (0 to 1) and { takeoff, landing } recordings to start now, at that
+ * offset in seconds (null: not now). `left` and `into`: real seconds to the step's end and since
+ * its start. `playing`: { takeoff, landing } each null (not played yet), its position in seconds
+ * while it plays, or Infinity once over.
+ *
+ * Taxiing out: the taxi loop, until the takeoff recording starts with the roll. In the air: the
+ * cruise jets once the takeoff recording fades, until the landing recording starts, its
+ * touchdown timed to the end of the flight. Taxiing in: the taxi loop again after the rollout.
+ */
+export function cabinSounds(step, left, into, playing = {}) {
+  const out = { taxi: 0, jets: 0, takeoff: null, landing: null };
+  const takeoff = playing.takeoff ?? null, landing = playing.landing ?? null;
+  if (step === "taxiOut") {
+    if (left > TAKEOFF_SECONDS) out.taxi = 1;
+    else if (takeoff === null) out.takeoff = TAKEOFF_SOUND_LEAD + (TAKEOFF_SECONDS - left);
+  } else if (step === "air") {
+    const roaring = takeoff !== null && takeoff < TAKEOFF_SOUND_FADES;
+    if (left <= TOUCHDOWN_AT && landing === null) out.landing = TOUCHDOWN_AT - left;
+    out.jets = roaring || landing !== null || out.landing !== null ? 0 : 1;
+  } else if (step === "taxiIn") {
+    // Skipped straight here: the landing from where the rollout has got to.
+    if (landing === null && into < 25) out.landing = TOUCHDOWN_AT + into;
+    if (into >= ROLLOUT_SECONDS + 2) out.taxi = 1;
+  }
+  return out;
+}
+
 /** A repeatable random number for item i of a row. */
 const rand = (i, salt) => {
   const s = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;

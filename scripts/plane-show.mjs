@@ -19,8 +19,12 @@
 // its own, like the subway ride window: in the corner beside the sidebar, resizable, with an
 // expand button anyone can use to fill the screen and shrink it back.
 //
-// Sound: the terminal's ambiance in the terminals (quieter in the jet bridge); the jets idling
-// in the cabin while it taxis, up to full power for the takeoff, and in the air. The GM gets the controls: speed (the clock and the weather go faster, the plane and
+// Sound: the terminal's ambiance in the terminals (quieter in the jet bridge). In the cabin, the
+// taxi recording while it taxis; the takeoff recording from the start of the roll, on into the
+// climb; the cruise jets once it fades; the landing recording, its touchdown on the rollout's
+// first moment (cabinSounds in taxi-view.mjs).
+//
+// The GM gets the controls: speed (the clock and the weather go faster, the plane and
 // the clouds never do), and a skip to the next step, which only moves the clock.
 
 import { ASSET_PATH, MODULE_ID, SETTINGS, attachAboveCanvas, canvasRect, cornerSpot, escapeHtml, formatClock, safeArea } from "./config.mjs";
@@ -29,7 +33,7 @@ import { darkness, drawLights, readLights } from "./plane-lights.mjs";
 import { SkyPainter, turbulence } from "./sky.mjs";
 import { WeatherLayer, currentWeather, rideWeather } from "./weather.mjs";
 import { STAGE_SIZE } from "./scenery-art.mjs";
-import { TAKEOFF_SECONDS, TAXI_SPEED, TaxiView, takeoffState, taxiInState } from "./taxi-view.mjs";
+import { TAKEOFF_SECONDS, TAXI_SPEED, TaxiView, cabinSounds, takeoffState, taxiInState } from "./taxi-view.mjs";
 
 const FADE_MS = 900;
 const SOUND_FADE_MS = 2500;
@@ -40,6 +44,10 @@ const WEATHER_MS = 3000;
 export const RATES = [1, 2, 5, 10, 30, 60];
 /** The cabin's engine roar, in the air only. */
 const JET_SOUND = `${ASSET_PATH}/sounds/InteriorJet.ogg`;
+/** The cabin while the plane taxis (a loop), and the takeoff and landing (played once each). */
+const TAXI_SOUND = `${ASSET_PATH}/sounds/TaxiSounds.ogg`;
+const TAKEOFF_SOUND = `${ASSET_PATH}/sounds/Takeoff.ogg`;
+const LANDING_SOUND = `${ASSET_PATH}/sounds/Landing.ogg`;
 /** The terminal around the party while they are on the ground. */
 const TERMINAL_SOUND = `${ASSET_PATH}/sounds/TerminalAmbiance.ogg`;
 /** The terminal's ambiance in the jet bridge, as a share of its volume in the terminal. */
@@ -257,6 +265,9 @@ export class PlaneShow {
     Promise.all(GATE_PLANES.map((a) => cachedImage(`${ASSET_PATH}/flight/${a}.webp`)))
       .then((planes) => { if (this.taxiView) this.taxiView.planes = planes.filter(Boolean); });
     this.taxiStep = null;
+    this.oneShots = {};
+    this.cue = null;
+    this.cueKey = "";
     this.bump = 0;
     this.bumpV = 0;
     this.nextBump = 0;
@@ -392,6 +403,9 @@ export class PlaneShow {
     const { step, left } = stepAt(f.plan, elapsed);
     // Where the taxiing is, for the takeoff and the rollout between reads.
     this.taxiStep = { key: step.key, left, total: step.minutes * 60, rate: f.rate ?? 1, at: now, running: f.phase === "flying" && !game.paused };
+    // The cabin's recordings, cued by the step in real seconds.
+    const rate = f.rate ?? 1;
+    this.#cueSound(f.phase === "flying" ? step.key : "landed", left / rate, (step.minutes * 60 - left) / rate, now);
     this.root.querySelector(".kgt-flight-clock .time").textContent = formatClock(world);
     this.root.querySelector(".kgt-flight-clock .eta").textContent =
       `${f.phase === "landed" ? "Arrived" : `Arrives ${formatClock((f.start ?? world) + total)}`}${(f.rate ?? 1) > 1 ? `, ×${f.rate}` : ""}`;
@@ -605,14 +619,48 @@ export class PlaneShow {
     // The cabin lights are turned down for a takeoff or landing after dark.
     const dim = this.dark ?? 0;
     this.taxiArt.style.filter = dim > 0.01 ? `brightness(${(1 - 0.45 * dim).toFixed(3)}) saturate(${(1 - 0.2 * dim).toFixed(3)})` : "";
-    // The engines: idling, spooling up for the takeoff.
-    if (now - (this.powerAt ?? 0) > 400) {
-      this.powerAt = now;
-      const level = (this.volume ?? 0.8) * state.power;
-      if (Math.abs(level - (this.jetLevel ?? -1)) > 0.02) {
-        this.jetLevel = level;
-        this.sound?.fade?.(level, { duration: 450 });
+  }
+
+  /** The cabin's recordings by the step (cabinSounds): the takeoff and the landing started on cue, the loops set. */
+  #cueSound(step, left, into, now) {
+    const shots = (this.oneShots ??= {});
+    const pos = (name) => {
+      const s = shots[name];
+      if (!s) return null;
+      const p = s.offset + (now - s.at) / 1000;
+      return s.done || (s.duration && p >= s.duration) ? Infinity : p;
+    };
+    const cue = cabinSounds(step, left, into, { takeoff: pos("takeoff"), landing: pos("landing") });
+    if (cue.takeoff !== null) this.#playOnce("takeoff", TAKEOFF_SOUND, cue.takeoff, now);
+    if (cue.landing !== null) this.#playOnce("landing", LANDING_SOUND, cue.landing, now);
+    this.cue = cue;
+    const key = `${cue.taxi}|${cue.jets}`;
+    if (key !== this.cueKey) {
+      this.cueKey = key;
+      this.#mixSound();
+    }
+  }
+
+  /** Play a recording once, from `offset` seconds in (later still if it took a moment to load). */
+  async #playOnce(name, src, offset, now) {
+    const entry = { at: now, offset, duration: null, sound: null, done: false };
+    this.oneShots[name] = entry;
+    const Sound = globalThis.foundry?.audio?.Sound;
+    const flightId = this.flight?.id;
+    if (!Sound) return;
+    try {
+      const sound = new Sound(src, { context: game.audio?.environment });
+      await sound.load();
+      const from = offset + (performance.now() - now) / 1000;
+      if (this.flight?.id !== flightId || this.oneShots[name] !== entry || from >= sound.duration) {
+        entry.done = true;
+        return;
       }
+      await sound.play({ offset: from, volume: this.volume ?? 0.8, fade: 400 });
+      Object.assign(entry, { sound, at: performance.now(), offset: from, duration: sound.duration });
+    } catch (err) {
+      entry.done = true;
+      console.warn(`${MODULE_ID} | flight sound failed to play: ${src}`, err);
     }
   }
 
@@ -635,10 +683,11 @@ export class PlaneShow {
         return null;
       }
     };
-    const [jet, terminal] = await Promise.all([play(JET_SOUND), play(TERMINAL_SOUND)]);
-    if (this.flight?.id !== flightId) return [jet, terminal].forEach((s) => s?.stop());
+    const [jet, terminal, taxi] = await Promise.all([play(JET_SOUND), play(TERMINAL_SOUND), play(TAXI_SOUND)]);
+    if (this.flight?.id !== flightId) return [jet, terminal, taxi].forEach((s) => s?.stop());
     this.sound = jet;
     this.ambience = terminal;
+    this.taxiSound = taxi;
     this.#mixSound();
   }
 
@@ -653,9 +702,12 @@ export class PlaneShow {
     try { ambience = Number(game.settings.get(MODULE_ID, SETTINGS.terminalVolume)); } catch { /* not registered (previews) */ }
     if (!Number.isFinite(ambience)) ambience = 0.5;
     const scene = this.scene ?? "";
-    // Taxiing, the engines follow the plane (#drawTaxi); they start at idle.
-    const jets = scene === "flight" ? v : scene === "taxi" ? v * 0.25 : 0;
-    this.jetLevel = jets;
+    // In the cabin the step decides (#cueSound): the taxi loop, or the cruise jets once the takeoff
+    // recording has faded and until the landing's starts.
+    const cue = this.cue;
+    const jets = scene === "flight" || scene === "taxi" ? v * (cue ? cue.jets : scene === "flight" ? 1 : 0) : 0;
+    const taxi = scene === "taxi" ? v * (cue ? cue.taxi : 1) : 0;
+    this.taxiSound?.fade?.(taxi, { duration: SOUND_FADE_MS });
     const terminal = scene.startsWith("terminal:") ? ambience : scene === "bridge" ? ambience * BRIDGE_AMBIENCE : 0;
     this.sound?.fade?.(jets, { duration: SOUND_FADE_MS });
     this.ambience?.fade?.(terminal, { duration: SOUND_FADE_MS });
@@ -668,9 +720,12 @@ export class PlaneShow {
   }
 
   #stopSound() {
-    for (const sound of [this.sound, this.ambience]) sound?.fade(0, { duration: SOUND_FADE_MS }).then(() => sound.stop());
+    const shots = Object.values(this.oneShots ?? {}).map((s) => s.sound);
+    for (const sound of [this.sound, this.ambience, this.taxiSound, ...shots]) sound?.fade?.(0, { duration: SOUND_FADE_MS })?.then?.(() => sound.stop());
     this.sound = null;
     this.ambience = null;
+    this.taxiSound = null;
+    this.oneShots = {};
   }
 
   #end() {
