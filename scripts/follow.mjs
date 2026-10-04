@@ -7,7 +7,8 @@ export const TOKEN_STEP_MS = 1000;
 export const TOKEN_STEP_FAST_MS = 400;
 
 const RIDE_ZOOM = 0.35;
-const END_ZOOM = 0.1;
+/** The scene's zoom the view settles at after the ride. */
+const END_ZOOM = 1;
 const ZOOM_IN_MS = 1500;
 const ZOOM_OUT_MS = 2000;
 
