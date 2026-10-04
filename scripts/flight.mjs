@@ -13,6 +13,7 @@
 
 import { MODULE_ID, SETTINGS, escapeHtml, formatClock, setting } from "./config.mjs";
 import { formatMoney } from "./fare.mjs";
+import { huddle } from "./follow.mjs";
 import { AIRCRAFT, AIRLINES, ENCOUNTER_POINTS, formatMinutes, midFlight, minutesUntil, nextSkip } from "./flights.mjs";
 import { PlaneShow } from "./plane-show.mjs";
 import { rideWeather } from "./weather.mjs";
@@ -374,8 +375,10 @@ export class FlightController {
 
   /**
    * The riders' tokens (and the party's group token, if any rider is in it) leave the scene they
-   * are on and stand around a point of the next one, side by side. Riders without a token get
-   * one from their prototype. Returns the point, for the view.
+   * are on and gather at a point of the next one in as tight a circle as they make, as off a
+   * train: the party's group token in the middle, the rest in rings around it, spaced by the
+   * tokens' own size. Riders without a token get one from their prototype. Returns the point,
+   * for the view.
    */
   async #moveParty(flight, dest, centre) {
     const origin = game.scenes.get(flight.sceneId);
@@ -388,24 +391,28 @@ export class FlightController {
     const withToken = new Set(tokens.map((t) => t.actorId));
     const size = dest.grid.size;
     const data = [];
-    const place = (doc, i) => {
-      const cols = 4, gx = (i % cols) - (cols - 1) / 2, gy = Math.floor(i / cols);
-      const w = (doc.width ?? 1) * size, h = (doc.height ?? 1) * size;
-      return { x: Math.round(centre.x + gx * size * 1.1 - w / 2), y: Math.round(centre.y + gy * size * 1.1 - h / 2) };
-    };
-    tokens.forEach((t, i) => {
+    // The group token first, so it takes the middle.
+    tokens.sort((a, b) => (b.actor?.type === "group") - (a.actor?.type === "group"));
+    for (const t of tokens) {
       const obj = t.toObject();
       delete obj._id;
-      data.push({ ...obj, ...place(obj, i) });
-    });
+      data.push(obj);
+    }
     for (const r of flight.riders) {
       if (withToken.has(r.id)) continue;
       const actor = game.actors.get(r.id);
       if (!actor) continue;
       const doc = (await actor.getTokenDocument()).toObject();
       delete doc._id;
-      data.push({ ...doc, ...place(doc, data.length) });
+      data.push(doc);
     }
+    const offsets = huddle(data.length);
+    const step = Math.max(...data.map((d) => Math.max(d.width ?? 1, d.height ?? 1)), 0) * size;
+    data.forEach((d, i) => {
+      const w = (d.width ?? 1) * size, h = (d.height ?? 1) * size;
+      d.x = Math.round(centre.x + offsets[i].x * step - w / 2);
+      d.y = Math.round(centre.y + offsets[i].y * step - h / 2);
+    });
     if (data.length) await dest.createEmbeddedDocuments("Token", data);
     if (origin && tokens.length && origin.id !== dest.id) await origin.deleteEmbeddedDocuments("Token", tokens.map((t) => t.id));
     // From now on the party is here.
