@@ -9,6 +9,9 @@ You are free to share, adapt and use this data, as long as you credit OpenStreet
 any adapted database you make public under the ODbL. OpenStreetMap's copyright and license:
 https://www.openstreetmap.org/copyright
 
-Station opening years come from **Wikidata** (CC0). The airport descriptions and the 1986 fare,
-airline and timing tables were written for KG Transit and are offered under the same terms as
-the data they sit in.
+Station opening years come from **Wikidata** (CC0).
+
+The airport descriptions in `data/airports.json` are KG Transit's own writing, contents of the
+database rather than OpenStreetMap data, and like the rest of the module they are under the
+PolyForm Noncommercial License 1.0.0 (see LICENSE): free to use and share, not to sell. The 1986
+fare, airline and timing tables are part of the code, under the same license.
