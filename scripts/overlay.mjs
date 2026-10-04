@@ -1,5 +1,5 @@
 import { CARS } from "./catalog.mjs";
-import { attachAboveCanvas, ASSET_PATH, MODULE_ID, SETTINGS, escapeHtml, formatClock, setting } from "./config.mjs";
+import { ASSET_PATH, MODULE_ID, SETTINGS, cornerSpot, escapeHtml, formatClock, setting } from "./config.mjs";
 import { tripStops } from "./network.mjs";
 import { STAGE, Scenery, sceneryKey, timeOfDay, tripKeys } from "./scenery.mjs";
 import { DEFAULT_THEME, isTheme } from "./themes.mjs";
@@ -115,8 +115,7 @@ export class RideOverlay {
       this.scenery.preload(tripKeys(this.ride.trip, this.#when(this.ride.start)));
     }
 
-    // Over the canvas, under Foundry's interface, sheets and other modules' HUDs.
-    attachAboveCanvas(root);
+    document.body.append(root);
     this.resizeObserver = new ResizeObserver(() => this.#fit());
     this.resizeObserver.observe(root);
     requestAnimationFrame(() => {
@@ -205,6 +204,12 @@ export class RideOverlay {
   #render(now) {
     const ride = this.ride;
     if (!ride || !this.root) return;
+    // Twice a second: the window keeps left of the sidebar and above a docked camera row.
+    if (this.mode === "window" && now - (this.placedAt ?? 0) > 500) {
+      this.placedAt = now;
+      const spot = this.expanded ? null : cornerSpot();
+      Object.assign(this.root.style, spot ? { right: `${spot.right}px`, bottom: `${spot.bottom}px` } : { right: "", bottom: "" });
+    }
     const trip = ride.trip;
     const elapsed = this.controller.displayElapsed(now);
     const state = stateAt(trip, elapsed);

@@ -46,10 +46,11 @@ scripts/
   flights.mjs               PURE. Air travel, 1986: distance, the fare level (SIFL), airlines and aircraft by route, curb-to-curb steps, encounter points
   airports.mjs              Loads data/airports.json; hands each city's airports to KG Cities (api.addLandmarks) to draw in violet
   flight-dialog.mjs         Flight booking (ApplicationV2 + templates/flight.hbs), opened by Hooks "kgCities.airport"
-  flight.mjs                FlightController: world setting activeFlight, the GM's legs (Calendaria cinematic, destination scene, tokens, encounter, Continue flight)
-  plane-show.mjs            Every client's flight screen: the side view over Calendaria's cinematic, buffeting, the jet sound;
-                            on the ground the airport's terminal full screen (tarmac, weather, terminal), terminal ambiance,
-                            every ground/air change through black (art loaded first), each step's time left
+  flight.mjs                FlightController: world setting activeFlight, the GM's clock, skips (the clock only), the destination's weather halfway, destination scene, tokens, encounter, Continue flight
+  plane-show.mjs            Every client's flight screen: five scenes (departure terminal, jet bridge, flight, jet bridge,
+                            arrival terminal) filling the free canvas area (config.mjs canvasRect/safeArea, read from
+                            Foundry's own interface as Calendaria's HUD does), a fade to black between scenes, the cabin
+                            in its own subway-style window (cornerSpot), terminal ambiance and jets by scene
   plane-lights.mjs          A plane's night lights: windows found in the art (small dark blobs in rows), beacons and
                             tail light from its outline, wingtip by hand per plane; darkness(hour) eases dusk and dawn
   sky.mjs                   Sky, clouds and weather on a 2D canvas, for the cabin windows and the flight screen
@@ -72,7 +73,7 @@ tools/
   flight-art.py             Cuts assets/flight/ (plane side views, the cabin) out of tools/flight-src/
   terminal-art.py           assets/terminals/<CODE>-terminal|day|dusk.webp from assets/airport-terminal-*.zip (not in git):
                             the terminal's #00FF00 windows keyed clear, the tarmac plates re-encoded
-  flight-preview.html       Plays a flight and the cabin preview outside Foundry (stand-in cinematic); records clips via preview-server's /save/
+  flight-preview.html       Plays a flight outside Foundry (jump buttons for each end and the air); records clips via preview-server's /save/
   cities/build.py           Builds data/cities from OpenStreetMap (Overpass) and Wikidata; curation tables inside
   cities/index.json         Copy of KG Cities' city list (ids, centres, metro and core boxes)
   cities/boston-1986.json   The hand-built 1986 MBTA, used as Boston's 1980s snapshot

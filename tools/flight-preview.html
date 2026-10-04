@@ -58,23 +58,12 @@
   const show = new PlaneShow({
     setRate: (rate) => { flight = { ...flight, rate }; show.sync(flight); },
     skip: () => {
-      // To the next step (as the flight controller does), the last one landing the plane.
+      // As the flight controller does: the clock moves to the next step, nothing more.
       const next = nextSkip(flight.plan, game.time.worldTime - flight.start, flight.encounter);
-      const cine = document.createElement("div");
-      cine.id = "calendaria-cinematic";
-      cine.innerHTML = `<div class="bg"></div><div class="date">Thursday, 13 March 1986</div>`;
-      document.body.append(cine);
-      flight = { ...flight, phase: "skipping" };
+      game.time.worldTime = flight.start + next.at;
+      flight = { ...flight, phase: next.key === "arrival" ? "landed" : "flying" };
       show.sync(flight);
-      setTimeout(() => {
-        game.time.worldTime = flight.start + next.at;
-        cine.style.opacity = "0";
-        setTimeout(() => cine.remove(), 900);
-        flight = { ...flight, phase: next.key === "arrival" ? "landed" : "flying" };
-        show.sync(flight);
-      }, 2500);
-    }
-  });
+    }  });
   window.show = show;
   let last = performance.now();
   setInterval(() => {

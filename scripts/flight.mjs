@@ -4,8 +4,7 @@
 // The trip runs in real time by default, like a ride: the active GM's client moves the clock one
 // game second per real second, times the speed the GM picks (×1 to ×60, eased in), and not while
 // the game is paused. The plane on screen never speeds up; the clock and the weather do. The
-// GM's skip jumps to the next step (or the encounter, if it comes first) with Calendaria's
-// time-skip cinematic.
+// GM's skip moves the clock to the next step (or the encounter, if it comes first), nothing more.
 //
 // From takeoff, behind the flight, the destination city's scene is found or generated. At the
 // encounter point (the GM's own scene, at a point of the trip) the party is moved there and it
@@ -146,8 +145,8 @@ export class FlightController {
 
   /**
    * Skip to the next step of the trip (boarding, taxi, takeoff, landing, the gate, baggage
-   * claim, arrival), or to the encounter when it comes first, with Calendaria's cinematic for
-   * the time between. Then the trip carries on in real time.
+   * claim, arrival), or to the encounter when it comes first: the clock moves there, and the
+   * flight screen changes scene if the step is in another one. Then the trip carries on in real time.
    */
   async skip() {
     if (!game.user.isGM || this.flight?.phase !== "flying" || this.busy) return;
@@ -249,7 +248,7 @@ export class FlightController {
       this.#run(async () => {
         this.#stopDriving();
         this.pending = 0;
-        await this.#advance(target - this.#elapsed(), { cinematic: false });
+        await this.#advance(target - this.#elapsed());
         if (encounter) await this.#encounter(flight);
         else await this.#arrive(flight);
       });
@@ -262,18 +261,14 @@ export class FlightController {
     }
   }
 
-  /** So many seconds go by: with Calendaria's cinematic (for skips), or straight. */
-  async #advance(seconds, { cinematic = true } = {}) {
+  /**
+   * So many seconds go by: the clock moves straight there. No time-skip cinematic: the flight
+   * screen's own fade through black is the only transition (Calendaria plays its cinematic only
+   * for time moved through its own controls).
+   */
+  async #advance(seconds) {
     seconds = Math.round(seconds);
-    if (seconds <= 0) return;
-    const calendaria = globalThis.CALENDARIA?.api;
-    try {
-      if (cinematic && calendaria?.advanceTime) await calendaria.advanceTime(seconds, { cinematic: true });
-      else await game.time.advance(seconds);
-    } catch (err) {
-      console.warn(`${MODULE_ID} | advancing the clock`, err);
-      await game.time.advance(seconds);
-    }
+    if (seconds > 0) await game.time.advance(seconds);
   }
 
   /* ---------------------------------------- */
