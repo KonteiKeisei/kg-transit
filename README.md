@@ -4,11 +4,11 @@ Build subway, tram and steam railway lines on any Foundry scene, place their sto
 
 - **Requires:** Foundry VTT v13 and the **Calendaria** module. Fares and party features use the **dnd5e** system (5.3.3).
 - **Ships with:** four themes (Modern, Industrial, Fantasy, Future), a subway car and a steam coach interior, 17 kinds of scenery, underground and above-ground platforms, and a sample network to start from.
-- **Real cities:** on a **KG Cities** scene, the city's real rail network is set up for you, as it ran in the scene's era (the 1980s or today). See [Real cities](#real-cities-kg-cities).
+- **Real cities:** on a **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** scene, the city's real rail network is set up for you, as it ran in the scene's era (the 1980s or today). See [Real cities](#real-cities-kg-cities).
 - **Sounds that ship with it:** the subway ride loop (used by the city networks), the jet engines and the airport terminal's ambiance. For your own networks you choose the sound for each car in the module settings.
 - **Guides:** the [KG Transit wiki](https://github.com/KonteiKeisei/kg-transit/wiki) walks through building networks for fantasy, modern and futuristic settings.
 
-> **Works with KG Cities.** KG Cities is a good module on its own: it turns real US cities into Foundry scenes from OpenStreetMap, in the 1980s or today. With KG Transit beside it, those scenes come alive: each city scene gets **its real metro set up automatically** for its era, and the city's airports become **flights between cities**, curb to curb, with the airport terminal, the jet bridge and the plane. Neither module needs the other; together they make a whole country you can travel. See [Real cities](#real-cities-kg-cities) and [Air travel between cities](#12-air-travel-between-cities).
+> **Works with [KG Cities](https://github.com/KonteiKeisei/kg-cities).** KG Cities is a good module on its own: it turns real US cities into Foundry scenes from OpenStreetMap, in the 1980s or today. With KG Transit beside it, those scenes come alive: each city scene gets **its real metro set up automatically** for its era, and the city's airports become **flights between cities**, curb to curb, with the airport terminal, the jet bridge and the plane. Neither module needs the other; together they make a whole country you can travel. See [Real cities](#real-cities-kg-cities) and [Air travel between cities](#12-air-travel-between-cities).
 
 ---
 
@@ -44,10 +44,12 @@ Build subway, tram and steam railway lines on any Foundry scene, place their sto
 2. Install and enable **Calendaria** as well. KG Transit will not run without it.
 3. Enable **KG Transit** in your world's module settings.
 4. In **Configure Settings > KG Transit**, pick a ride sound for each car (optional, see [Module settings](#module-settings)).
+5. Optional, for real city scenes, automatic metros and flights: install **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** the same way, from its manifest URL:
+   `https://github.com/KonteiKeisei/kg-cities/releases/latest/download/module.json`
 
 ## Real cities (KG Cities)
 
-**KG Cities** makes scenes of real US cities from OpenStreetMap, set in the 1980s or today. KG Transit recognises those scenes and gives each one the city's own rail network: the real lines in their real colours, every station in its real place on the map, transfers where the lines meet, tunnels, elevated track and bridges where they really are, and the fare of the time.
+**[KG Cities](https://github.com/KonteiKeisei/kg-cities)** makes scenes of real US cities from OpenStreetMap, set in the 1980s or today. KG Transit recognises those scenes and gives each one the city's own rail network: the real lines in their real colours, every station in its real place on the map, transfers where the lines meet, tunnels, elevated track and bridges where they really are, and the fare of the time.
 
 - **It happens by itself.** The first time the GM views a city scene that has no network yet, the network is set up and turned on, and a message says so. (Turn this off with **Set up city networks** in the module settings; the **Transit network** button then sets it up when you first open the editor.)
 - **The era decides the network.** A 1980s scene gets the network as it ran in its year (1986 unless KG Cities says otherwise): lines and stations not yet opened are left out, and lines and stations that had other names then get them. A modern scene gets today's network.
@@ -215,7 +217,7 @@ The network's settings are summed up in one line near the top of the editor (nam
 
 ## 12. Air travel between cities
 
-On a **KG Cities** scene, the city's airports of 1986 are drawn on the map in violet: the terminals as buildings, the airfield's edge dashed. Hover one for its card. The cities and their airports: Boston (Logan), New York (JFK, LaGuardia, Newark), Washington (National, Dulles), Baltimore (BWI, which serves Washington too), Philadelphia, Atlanta (Hartsfield), Chicago (O'Hare, Midway), Detroit (Metro, City), St. Louis (Lambert), Miami (Miami, Fort Lauderdale), Austin (Robert Mueller), Las Vegas (McCarran), Los Angeles (LAX, Burbank, Long Beach), San Francisco (SFO, Oakland, San Jose).
+On a **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** scene, the city's airports of 1986 are drawn on the map in violet: the terminals as buildings, the airfield's edge dashed. Hover one for its card. The cities and their airports: Boston (Logan), New York (JFK, LaGuardia, Newark), Washington (National, Dulles), Baltimore (BWI, which serves Washington too), Philadelphia, Atlanta (Hartsfield), Chicago (O'Hare, Midway), Detroit (Metro, City), St. Louis (Lambert), Miami (Miami, Fort Lauderdale), Austin (Robert Mueller), Las Vegas (McCarran), Los Angeles (LAX, Burbank, Long Beach), San Francisco (SFO, Oakland, San Jose).
 
 **Booking.** As GM, **click an airport** to book a flight from it.
 

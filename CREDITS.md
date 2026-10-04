@@ -22,4 +22,4 @@ The build tools (`tools/`, not shipped) used the **Overpass API** public servers
 
 Requires **Calendaria** (https://github.com/Sayshal/calendaria) for its clock, weather and
 time-skip cinematic, used through its public API. Works with the **dnd5e** system's coins and
-party actors, and with **KG Cities** for real city scenes.
+party actors, and with **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** for real city scenes.
