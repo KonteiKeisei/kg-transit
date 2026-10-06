@@ -39,6 +39,20 @@ function arrivalPoint(airport) {
   return { lon: ring.reduce((s, p) => s + p[0], 0) / ring.length, lat: ring.reduce((s, p) => s + p[1], 0) / ring.length };
 }
 
+/**
+ * No playlist plays through the airports and the flight: the trip has its own sound. The scene
+ * the party arrives in starts its own music when it opens.
+ */
+async function stopMusic() {
+  for (const playlist of game.playlists?.playing ?? []) {
+    try {
+      await playlist.stopAll();
+    } catch (err) {
+      console.warn(`${MODULE_ID} | stopping ${playlist.name}`, err);
+    }
+  }
+}
+
 /** Wait until this client's canvas shows the scene (or a minute passes). */
 function sceneShown(scene) {
   if (canvas.ready && canvas.scene?.id === scene.id) return Promise.resolve();
@@ -131,6 +145,7 @@ export class FlightController {
       clockWasRunning: !!calendaria?.isClockRunning?.()
     };
     if (flight.clockWasRunning) calendaria.stopClock();
+    await stopMusic();
     await this.#chat(this.#bookedCard(flight, waived, charged));
     if (this.isDriver) this.#prepareDestination(flight);
     await this.#save(flight);
@@ -153,18 +168,23 @@ export class FlightController {
     if (!game.user.isGM || this.flight?.phase !== "flying" || this.busy) return;
     this.#run(async () => {
       this.#stopDriving();
-      await this.#commit();
-      let flight = this.flight;
-      const next = nextSkip(flight.plan, this.#elapsed(flight), flight.encounter);
-      await this.#save({ ...flight, phase: "skipping" });
-      await this.#advance(next.at - this.#elapsed(flight));
+      this.pending = 0;
+      const flight = this.flight;
+      // Simple arithmetic: the step starts so many seconds after the trip did, so the clock goes
+      // to the trip's start plus that, straight away. Nothing waits on the destination (its scene
+      // and weather are made in the background and catch up on their own).
+      const next = nextSkip(flight.plan, this.#elapsed(flight), flight.encounter, flight.rate ?? 1);
+      await this.#advance(flight.start + next.at - game.time.worldTime);
       this.#rollWeatherIfDue(flight);
-      await this.rolling;
-      // The saved flight now carries the destination's weather, if it was rolled.
-      flight = { ...flight, destWeather: this.flight?.destWeather ?? flight.destWeather, destZone: this.flight?.destZone ?? flight.destZone };
-      if (next.key === "encounter") await this.#encounter(flight);
-      else if (next.key === "arrival") await this.#arrive(flight);
-      else await this.#save({ ...flight, phase: "flying" });
+      // The latest saved flight (the destination's weather may have landed meanwhile).
+      const now = { ...this.flight, phase: "flying" };
+      if (next.key === "encounter") await this.#encounter(now);
+      else if (next.key === "arrival") await this.#arrive(now);
+      else {
+        await this.#save(now);
+        // An unchanged setting fires no change, so the clock is started again here.
+        if (this.isDriver) this.#drive();
+      }
     });
   }
 
@@ -173,6 +193,8 @@ export class FlightController {
     const flight = this.flight;
     if (!flight || flight.phase !== "encounter" || !game.user.isGM) return;
     const elapsed = flight.encounter.minutes * 60;
+    // The encounter scene's music stops with it.
+    await stopMusic();
     await this.#save({ ...flight, phase: "flying", focus: null, start: game.time.worldTime - elapsed });
     if (game.paused) game.togglePause(false, { broadcast: true });
   }

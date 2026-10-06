@@ -8,6 +8,8 @@ export const ASSET_PATH = `modules/${MODULE_ID}/assets`;
 export const SETTINGS = {
   loopVolume: "loopVolume",
   terminalVolume: "terminalVolume",
+  taxiBriefing: "taxiBriefing",
+  landingBriefing: "landingBriefing",
   iconSize: "iconSize",
   showToAll: "showRideToAll",
   activeRide: "activeRide",

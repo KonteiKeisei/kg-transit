@@ -33,7 +33,7 @@ import { darkness, drawLights, readLights } from "./plane-lights.mjs";
 import { SkyPainter, turbulence } from "./sky.mjs";
 import { WeatherLayer, currentWeather, rideWeather } from "./weather.mjs";
 import { STAGE_SIZE } from "./scenery-art.mjs";
-import { TAKEOFF_SECONDS, TAXI_SPEED, TaxiView, cabinSounds, takeoffState, taxiInState } from "./taxi-view.mjs";
+import { LANDING_SECONDS, TAKEOFF_SECONDS, TAXI_SPEED, TaxiView, cabinSounds, landingState, takeoffState, taxiInState } from "./taxi-view.mjs";
 
 const FADE_MS = 900;
 const SOUND_FADE_MS = 2500;
@@ -48,6 +48,10 @@ const JET_SOUND = `${ASSET_PATH}/sounds/InteriorJet.ogg`;
 const TAXI_SOUND = `${ASSET_PATH}/sounds/TaxiSounds.ogg`;
 const TAKEOFF_SOUND = `${ASSET_PATH}/sounds/Takeoff.ogg`;
 const LANDING_SOUND = `${ASSET_PATH}/sounds/Landing.ogg`;
+/** The captain's briefing at the start of taxiing out. */
+const BRIEFING_SOUND = `${ASSET_PATH}/sounds/PilotBriefing.ogg`;
+/** The captain's word as the descent to landing begins. */
+const LANDING_BRIEFING_SOUND = `${ASSET_PATH}/sounds/PilotLanding.ogg`;
 /** The terminal around the party while they are on the ground. */
 const TERMINAL_SOUND = `${ASSET_PATH}/sounds/TerminalAmbiance.ogg`;
 /** The terminal's ambiance in the jet bridge, as a share of its volume in the terminal. */
@@ -92,6 +96,11 @@ async function loadImage(src) {
   img.src = src;
   return (await img.decode().then(() => true, () => false)) ? img : null;
 }
+
+/** A sound file the GM set in the module settings, or "" (not set, or not registered in a preview). */
+const soundSetting = (key) => {
+  try { return String(game.settings.get(MODULE_ID, key) ?? "").trim(); } catch { return ""; }
+};
 
 const folderSetting = (key) => {
   try { return String(game.settings.get(MODULE_ID, key) ?? "").replace(/\/+$/, ""); } catch { return ""; }
@@ -266,6 +275,7 @@ export class PlaneShow {
       .then((planes) => { if (this.taxiView) this.taxiView.planes = planes.filter(Boolean); });
     this.taxiStep = null;
     this.oneShots = {};
+    this.clipLengths = {};
     this.cue = null;
     this.cueKey = "";
     this.bump = 0;
@@ -360,7 +370,7 @@ export class PlaneShow {
       return;
     }
     const rate = f.rate ?? 1;
-    const next = nextSkip(f.plan, Math.max(0, game.time.worldTime - (f.start ?? game.time.worldTime)), f.encounter);
+    const next = nextSkip(f.plan, Math.max(0, game.time.worldTime - (f.start ?? game.time.worldTime)), f.encounter, f.rate ?? 1);
     // Redrawn only when something on it changes (read() asks twice a second).
     const state = `${rate}|${next.key}|${next.at}`;
     if (state === this.controlsFor) return;
@@ -424,7 +434,10 @@ export class PlaneShow {
     this.#controls();
     // The scene of the step: the terminal at that end, the jet bridge, or the flight. After
     // landing (and once the trip is over), the arrival terminal.
-    const kind = f.phase === "landed" ? "terminal" : SCENE_OF[step.key] ?? "flight";
+    // The last seconds of the flight are the landing, seen from the cabin (a second early, so the
+    // fade to black is over by the time the descent starts).
+    const landing = step.key === "air" && f.phase === "flying" && left / rate <= LANDING_SECONDS + 1;
+    const kind = f.phase === "landed" ? "terminal" : landing ? "taxi" : SCENE_OF[step.key] ?? "flight";
     const code = step.where === "origin" && f.phase !== "landed" ? f.from.iata : f.to.iata;
     this.#setScene(kind === "terminal" ? `terminal:${code}` : kind);
   }
@@ -588,13 +601,27 @@ export class PlaneShow {
   }
 
   /** How the plane moves while taxiing: the takeoff at the end of taxiing out, the rollout at the start of taxiing in. */
-  #taxiState(now) {
+  #taxiState(now, dt) {
     const s = this.taxiStep;
-    if (!s || (s.key !== "taxiOut" && s.key !== "taxiIn")) return takeoffState(-1);
-    // The step's seconds left now, counted on from the last read at the GM's speed.
-    const left = Math.max(0, s.left - (s.running ? ((now - s.at) / 1000) * s.rate : 0));
+    // After taxiing in, while the cabin fades out: still at the gate.
+    if (s?.key === "deplane" || s?.key === "claim") return taxiInState(Infinity, 0);
+    if (!s || (s.key !== "taxiOut" && s.key !== "taxiIn" && s.key !== "air")) return takeoffState(-1);
+    // Seconds into the step by the world clock, counted on from the last read at the GM's speed.
+    // The world clock moves in whole seconds, once a second, so this jumps back and forth by up
+    // to a second: the cabin keeps its own smooth count instead, eased towards the clock, and
+    // only snaps to it after a real jump (a skip, a change of step).
+    const read = s.total - s.left + (s.running ? ((now - s.at) / 1000) * s.rate : 0);
+    const est = this.taxiClock;
+    if (!est || est.key !== s.key || Math.abs(read - est.into) > 3 * s.rate) this.taxiClock = { key: s.key, into: read };
+    else {
+      if (s.running) est.into += dt * s.rate;
+      est.into += (read - est.into) * Math.min(1, dt * 0.6);
+    }
+    const left = Math.max(0, s.total - this.taxiClock.into);
     // In real seconds, so the takeoff lasts its 20 seconds whatever the speed.
     if (s.key === "taxiOut") return takeoffState(TAKEOFF_SECONDS - left / s.rate);
+    // In the air: all sky after the takeoff, then the descent to touchdown at the flight's end.
+    if (s.key === "air") return left / s.rate <= LANDING_SECONDS + 1 ? landingState(Math.max(0, left / s.rate)) : takeoffState(TAKEOFF_SECONDS);
     return taxiInState((s.total - left) / s.rate, left / s.rate);
   }
 
@@ -603,7 +630,7 @@ export class PlaneShow {
     const c = this.taxiCanvas;
     if (!c || !this.taxiView) return;
     if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
-    const state = this.#taxiState(now);
+    const state = this.#taxiState(now, dt);
     this.taxiView.draw(now, dt, state);
     // A bump at each joint in the taxiway; rattling once the plane is fast; smooth once it flies.
     const ground = 1 - Math.min(1, state.climb * 6);
@@ -621,18 +648,19 @@ export class PlaneShow {
     this.taxiArt.style.filter = dim > 0.01 ? `brightness(${(1 - 0.45 * dim).toFixed(3)}) saturate(${(1 - 0.2 * dim).toFixed(3)})` : "";
   }
 
-  /** The cabin's recordings by the step (cabinSounds): the takeoff and the landing started on cue, the loops set. */
+  /**
+   * The cabin's recordings, kept where the clock says they should be (cabinSounds): one not yet
+   * playing starts at its point; one more than a couple of seconds out (a skip, a change of speed)
+   * crossfades to its point; one past its part of the trip fades out. While the game is paused
+   * the clock stands still, so nothing is moved. The loops follow (#mixSound).
+   */
   #cueSound(step, left, into, now) {
-    const shots = (this.oneShots ??= {});
-    const pos = (name) => {
-      const s = shots[name];
-      if (!s) return null;
-      const p = s.offset + (now - s.at) / 1000;
-      return s.done || (s.duration && p >= s.duration) ? Infinity : p;
-    };
-    const cue = cabinSounds(step, left, into, { takeoff: pos("takeoff"), landing: pos("landing") });
-    if (cue.takeoff !== null) this.#playOnce("takeoff", TAKEOFF_SOUND, cue.takeoff, now);
-    if (cue.landing !== null) this.#playOnce("landing", LANDING_SOUND, cue.landing, now);
+    const cue = cabinSounds(step, left, into, this.clipLengths ?? {});
+    const running = !!this.taxiStep?.running;
+    this.#keepAt("briefing", soundSetting(SETTINGS.taxiBriefing) || BRIEFING_SOUND, cue.briefing, now, running);
+    this.#keepAt("takeoff", TAKEOFF_SOUND, cue.takeoff, now, running);
+    this.#keepAt("landing", LANDING_SOUND, cue.landing, now, running);
+    this.#keepAt("landingBriefing", soundSetting(SETTINGS.landingBriefing) || LANDING_BRIEFING_SOUND, cue.landingBriefing, now, running);
     this.cue = cue;
     const key = `${cue.taxi}|${cue.jets}`;
     if (key !== this.cueKey) {
@@ -641,25 +669,57 @@ export class PlaneShow {
     }
   }
 
-  /** Play a recording once, from `offset` seconds in (later still if it took a moment to load). */
-  async #playOnce(name, src, offset, now) {
-    const entry = { at: now, offset, duration: null, sound: null, done: false };
-    this.oneShots[name] = entry;
+  /** Where a playing recording is now, in seconds (counted from where and when it started). */
+  #position(shot, now) {
+    return shot.offset + (now - shot.at) / 1000;
+  }
+
+  /** Keep one recording at `want` seconds in (null: silent), as #cueSound describes. */
+  #keepAt(name, src, want, now, running) {
+    const shots = (this.oneShots ??= {});
+    const shot = shots[name];
+    if (want === null) {
+      if (shot) this.#fadeOut(name);
+      return;
+    }
+    if (shot && (!running || shot.loading || Math.abs(this.#position(shot, now) - want) <= 2)) return;
+    // Off its point (or not started): a new one at the right place, the old one fading under it.
+    if (shot) this.#fadeOut(name);
+    this.#startAt(name, src, want, now);
+  }
+
+  #fadeOut(name) {
+    const shot = this.oneShots?.[name];
+    if (!shot) return;
+    delete this.oneShots[name];
+    shot.gone = true;
+    const sound = shot.sound;
+    sound?.fade?.(0, { duration: 1200 })?.then?.(() => sound.stop());
+  }
+
+  /** Play a recording from `offset` seconds in (later by however long it took to load). */
+  async #startAt(name, src, offset, now) {
+    const shot = { at: now, offset, sound: null, loading: true, gone: false };
+    this.oneShots[name] = shot;
     const Sound = globalThis.foundry?.audio?.Sound;
     const flightId = this.flight?.id;
-    if (!Sound) return;
+    if (!Sound) return void (shot.loading = false);
     try {
       const sound = new Sound(src, { context: game.audio?.environment });
       await sound.load();
+      // Its real length, for the cue (the GM's own captain's clips run as long as they run).
+      (this.clipLengths ??= {})[name] = sound.duration;
       const from = offset + (performance.now() - now) / 1000;
-      if (this.flight?.id !== flightId || this.oneShots[name] !== entry || from >= sound.duration) {
-        entry.done = true;
+      if (shot.gone || this.flight?.id !== flightId || from >= sound.duration) {
+        if (this.oneShots?.[name] === shot) delete this.oneShots[name];
         return;
       }
-      await sound.play({ offset: from, volume: this.volume ?? 0.8, fade: 400 });
-      Object.assign(entry, { sound, at: performance.now(), offset: from, duration: sound.duration });
+      await sound.play({ offset: from, volume: this.volume ?? 0.8, fade: 600 });
+      Object.assign(shot, { sound, at: performance.now(), offset: from, loading: false });
+      // Faded out while it was starting: stop it again.
+      if (shot.gone) sound.fade?.(0, { duration: 600 })?.then?.(() => sound.stop());
     } catch (err) {
-      entry.done = true;
+      if (this.oneShots?.[name] === shot) delete this.oneShots[name];
       console.warn(`${MODULE_ID} | flight sound failed to play: ${src}`, err);
     }
   }

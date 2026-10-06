@@ -87,3 +87,18 @@ test("the weather turns to the destination's halfway through the flight", () => 
   assert.equal(midFlight(plan), start + Math.round(air / 120) * 60);
   assert.ok(midFlight(plan) > start && midFlight(plan) < start + air);
 });
+test("takeoff and landing are skipped to just before they happen, scaled by the GM's speed", async () => {
+  const { skipPoints, TAKEOFF_LEAD, LANDING_LEAD } = await import("../scripts/flights.mjs");
+  const plan = planFlight(BOS, LAX);
+  const ends = {};
+  let t = 0;
+  for (const s of plan.steps) { t += s.minutes * 60; ends[s.key] = t; }
+  const at = (key, rate) => skipPoints(plan, rate).find((p) => p.key === key).at;
+  // 10 s before the 20 s takeoff roll; 10 s before touchdown (the end of the flight).
+  assert.equal(at("takeoff", 1), ends.taxiOut - TAKEOFF_LEAD);
+  assert.equal(at("landing", 1), ends.air - LANDING_LEAD);
+  assert.equal(at("takeoff", 10), ends.taxiOut - TAKEOFF_LEAD * 10);
+  assert.ok(at("taxiOut", 1) < at("takeoff", 1), "taxi still its own skip");
+  // Partway through the takeoff, the next skip is the landing.
+  assert.equal(nextSkip(plan, ends.taxiOut - 5).key, "landing");
+});

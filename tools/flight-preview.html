@@ -20,6 +20,7 @@
 <body>
 <main>
   <div class="controls">
+    <strong id="version">KG Transit</strong>
     <label>Aircraft <select id="aircraft"></select></label>
     <label>Airline <select id="airline"></select></label>
     <label>Weather <select id="weather">
@@ -27,10 +28,11 @@
       <option>thunderstorm</option><option>snow</option><option>blizzard</option><option>fog</option>
     </select></label>
     <label>Hour <input id="hour" type="range" min="0" max="23" value="14"></label>
+    <label>Sound volume <input id="volume" type="range" min="0" max="1" step="0.05" value="0.8"></label>
     <button id="fly">Fly (real time; the GM's controls are at the top)</button>
     <label>Jump to (after Fly)
       <span style="display:flex;gap:6px;flex-wrap:wrap">
-        <button data-jump="origin">Departing terminal</button><button data-step="taxiOut" data-at="0.3">Taxi out</button><button data-step="taxiOut" data-before="26">Takeoff</button><button data-jump="air">In the air</button><button data-step="taxiIn" data-at="0">Taxi in</button><button data-jump="destination">Arriving terminal</button>
+        <button data-jump="origin">Departing terminal</button><button data-step="taxiOut" data-at="0.3">Taxi out</button><button data-step="taxiOut" data-before="26">Takeoff</button><button data-jump="air">In the air</button><button data-step="air" data-before="25">Landing</button><button data-step="taxiIn" data-at="0">Taxi in</button><button data-jump="destination">Arriving terminal</button>
       </span>
     </label>
   </div>
@@ -39,7 +41,54 @@
 <script>
   globalThis.Hooks = { on() {}, callAll() {} };
   // A GM, and a clock that runs at the chosen speed (as the GM's driver would).
-  globalThis.game = { user: { isGM: true }, time: { worldTime: 0, calendar: { timeToComponents: (t) => ({ hour: Math.floor(t / 3600) % 24, minute: Math.floor(t / 60) % 60 }) } }, settings: { get: () => "" } };
+  // The module's settings as the flight screen reads them: the volume from the slider here.
+  const SETTING_VALUES = { terminalVolume: 0.5, liveryFolder: "" };
+  globalThis.game = {
+    user: { isGM: true },
+    time: { worldTime: 0, calendar: { timeToComponents: (t) => ({ hour: Math.floor(t / 3600) % 24, minute: Math.floor(t / 60) % 60 }) } },
+    settings: { get: (_m, key) => key === "loopVolume" ? Number(document.getElementById("volume")?.value ?? 0.8) : SETTING_VALUES[key] ?? "" },
+    audio: {}
+  };
+  // Foundry's sound, played with the browser's own audio, so the flight can be heard here: the
+  // terminal, the taxi loop, the takeoff and landing recordings and the jets, faded as in Foundry.
+  class PreviewSound {
+    constructor(src) { this.src = src; }
+    async load() {
+      // Loaded whole first: the preview server cannot serve part of a file, so the browser could
+      // not seek into it (Foundry's server can).
+      const blob = await (await fetch(this.src)).blob();
+      this.el = new Audio(URL.createObjectURL(blob));
+      this.el.preload = "auto";
+      await new Promise((resolve, reject) => { this.el.oncanplaythrough = resolve; this.el.onerror = reject; this.el.load(); });
+      this.duration = this.el.duration;
+      return this;
+    }
+    async play({ offset = 0, volume = 1, loop = false, fade = 0 } = {}) {
+      this.el.loop = loop;
+      this.el.currentTime = Math.min(offset, Math.max(0, (this.duration || 0) - 0.05));
+      this.el.volume = fade ? 0 : Math.min(1, volume);
+      await this.el.play().catch((err) => console.warn("preview sound", this.src, err));
+      if (fade) this.fade(volume, { duration: fade });
+      return this;
+    }
+    fade(volume, { duration = 0 } = {}) {
+      const from = this.el?.volume ?? 0, start = performance.now();
+      clearInterval(this.fading);
+      return new Promise((resolve) => {
+        this.fading = setInterval(() => {
+          const p = duration ? Math.min(1, (performance.now() - start) / duration) : 1;
+          if (this.el) this.el.volume = Math.max(0, Math.min(1, from + (volume - from) * p));
+          if (p >= 1) { clearInterval(this.fading); resolve(); }
+        }, 50);
+      });
+    }
+    stop() { clearInterval(this.fading); this.el?.pause(); }
+  }
+  globalThis.foundry = { audio: {
+    Sound: PreviewSound,
+    AudioHelper: { play: async ({ src, volume = 0, loop = false }) => { const s = new PreviewSound(src); await s.load(); return s.play({ volume, loop }); } }
+  } };
+  fetch("/modules/kg-transit/module.json").then((r) => r.json()).then((m) => { document.getElementById("version").textContent = `KG Transit ${m.version}`; });
 </script>
 <script type="module">
   import { AIRCRAFT, AIRLINES, nextSkip, planFlight } from "/modules/kg-transit/scripts/flights.mjs";
@@ -59,7 +108,7 @@
     setRate: (rate) => { flight = { ...flight, rate }; show.sync(flight); },
     skip: () => {
       // As the flight controller does: the clock moves to the next step, nothing more.
-      const next = nextSkip(flight.plan, game.time.worldTime - flight.start, flight.encounter);
+      const next = nextSkip(flight.plan, game.time.worldTime - flight.start, flight.encounter, flight.rate ?? 1);
       game.time.worldTime = flight.start + next.at;
       flight = { ...flight, phase: next.key === "arrival" ? "landed" : "flying" };
       show.sync(flight);
@@ -94,7 +143,10 @@
       t += s.minutes;
     }
   });
+  $("volume").oninput = () => show.refreshSound();
   $("fly").onclick = () => {
+    // A new flight: the last one ends first, its sound with it.
+    if (flight) show.sync(null);
     const BOS = { iata: "BOS", size: "hub", lat: 42.3656, lon: -71.0096 }, ORD = { iata: "ORD", size: "hub", lat: 41.9742, lon: -87.9073 };
     const plan = { ...planFlight(BOS, ORD), aircraft: $("aircraft").value, airline: $("airline").value };
     game.time.worldTime = +$("hour").value * 3600;

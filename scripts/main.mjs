@@ -76,6 +76,16 @@ Hooks.once("init", () => {
     hint: "Optional. A folder of your own airline liveries, side views nose to the left on a transparent background, named <airline>-<plane>.webp or .png (for example united-dc10.webp, twa-l1011.png). A flight uses its airline's livery when the folder has one, otherwise the white plane with its tail painted.",
     scope: "world", config: true, type: String, filePicker: "folder", default: ""
   });
+  register(SETTINGS.taxiBriefing, {
+    name: "Flights: captain's word at taxi",
+    hint: "Optional. Your own announcement, played in the cabin from the start of taxiing out (the taxi sounds lower under it). Leave empty for the built-in one.",
+    scope: "world", config: true, type: String, filePicker: "audio", default: ""
+  });
+  register(SETTINGS.landingBriefing, {
+    name: "Flights: captain's word before landing",
+    hint: "Optional. Your own announcement, played in the cabin from the start of the descent to landing, on into the rollout. Leave empty for the built-in one.",
+    scope: "world", config: true, type: String, filePicker: "audio", default: ""
+  });
   register(SETTINGS.activeFlight, {
     scope: "world", config: false, type: Object, default: {},
     onChange: (value) => flights.onChanged(value)

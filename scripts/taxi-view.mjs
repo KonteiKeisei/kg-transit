@@ -37,6 +37,27 @@ export function takeoffState(t) {
   return { speed, pitch, climb, power: Math.min(1, 0.25 + t * 0.6), runway: true };
 }
 
+/** The landing: the last seconds of the flight, seen from the cabin, down to touchdown. */
+export const LANDING_SECONDS = 20;
+const TOUCHDOWN_SPEED = LIFTOFF_SPEED * 0.75;
+
+/**
+ * The plane `left` seconds before touchdown: only sky at first, the ground coming up into the
+ * windows as it descends, a flare (the nose up) in the last seconds, and the wheels on the
+ * runway at 0, at the speed the rollout (taxiInState) starts from.
+ */
+export function landingState(left) {
+  const climb = smooth((left - 0.3) / (LANDING_SECONDS - 4)) ** 1.15;
+  const flare = 1 - smooth(left / 4);
+  return {
+    speed: TOUCHDOWN_SPEED + 12 * smooth(left / LANDING_SECONDS),
+    pitch: ((1 + 3 * flare) * Math.PI) / 180 * (left > 0 ? 1 : 0.5),
+    climb,
+    power: 0.35,
+    runway: true
+  };
+}
+
 /**
  * Taxiing in: the landing rollout slowing to taxi speed over its first seconds, then taxiing,
  * rolling to a stop at the gate as the step ends. `t`: seconds into the step; `left`: seconds to
@@ -45,8 +66,10 @@ export function takeoffState(t) {
 export function taxiInState(t, left = Infinity) {
   const roll = clamp01(t / ROLLOUT_SECONDS);
   const rolling = t < ROLLOUT_SECONDS;
-  const speed = LIFTOFF_SPEED * 0.75 * (1 - smooth(roll)) + TAXI_SPEED * smooth(roll);
-  return { speed: speed * (rolling ? 1 : clamp01(left / 8)), pitch: 0, climb: 0, power: rolling ? 0.6 * (1 - roll) + 0.25 : 0.25, runway: rolling };
+  const speed = TOUCHDOWN_SPEED * (1 - smooth(roll)) + TAXI_SPEED * smooth(roll);
+  // The nose comes down from the flare over the first seconds.
+  const pitch = (2 * Math.PI) / 180 * (1 - smooth(t / 2.5));
+  return { speed: speed * (rolling ? 1 : clamp01(left / 8)), pitch, climb: 0, power: rolling ? 0.6 * (1 - roll) + 0.25 : 0.25, runway: rolling };
 }
 
 /** The cabin art (cabin.webp, 1589 x 990): the middle of its big window, as a share of the picture. */
@@ -65,41 +88,65 @@ export function cabinFrame(w, h) {
   };
 }
 
-/** Takeoff.ogg: how far into the recording the roll starts (its spool-up), and where it starts to fade. */
-export const TAKEOFF_SOUND_LEAD = 2;
-const TAKEOFF_SOUND_FADES = 56;
+/**
+ * Takeoff.ogg: its wheels leave the runway 55 seconds in. The recording starts with the roll at
+ * the point that puts its wheels up on the animation's (ROTATE_AT seconds into the takeoff), and
+ * starts to fade about 59 seconds in.
+ */
+const TAKEOFF_WHEELS_UP = 55;
+export const TAKEOFF_SOUND_LEAD = TAKEOFF_WHEELS_UP - ROTATE_AT;
+const TAKEOFF_SOUND_FADES = 59;
 /** Landing.ogg: the touchdown, so many seconds in. It lines up with the start of the rollout. */
 export const TOUCHDOWN_AT = 21;
 
+/** How long the recordings run, in seconds (Takeoff.ogg, Landing.ogg). */
+export const TAKEOFF_SOUND_LENGTH = 69.4;
+export const LANDING_SOUND_LENGTH = 54.8;
+/** PilotBriefing.ogg: the captain's word to the cabin, from the start of taxiing out. */
+export const BRIEFING_SOUND_LENGTH = 52.3;
+/** PilotLanding.ogg: the captain's word before landing, from the start of the descent in the cabin. */
+export const LANDING_BRIEFING_LENGTH = 60.5;
+/** The taxi loop's level while the captain speaks. */
+const UNDER_BRIEFING = 0.6;
+
 /**
- * What the cabin should sound like, from the step and where the one-shot recordings are:
- * { taxi, jets } loop levels (0 to 1) and { takeoff, landing } recordings to start now, at that
- * offset in seconds (null: not now). `left` and `into`: real seconds to the step's end and since
- * its start. `playing`: { takeoff, landing } each null (not played yet), its position in seconds
- * while it plays, or Infinity once over.
+ * What the cabin should sound like at this moment of the trip, worked out from the clock alone:
+ * { taxi, jets } loop levels (0 to 1), and where in each recording the cabin should be now,
+ * { briefing, takeoff, landing, landingBriefing } in seconds (null: not playing). `left` and `into`: real seconds to the
+ * step's end and since its start. lengths: { briefing, landingBriefing }, the captain's clips'
+ * own lengths when the GM has set their own (else the built-in ones'). The player keeps the recordings at these points, so a skip or
+ * a reload lands every sound where it belongs instead of starting it over.
  *
- * Taxiing out: the taxi loop, until the takeoff recording starts with the roll. In the air: the
- * cruise jets once the takeoff recording fades, until the landing recording starts, its
- * touchdown timed to the end of the flight. Taxiing in: the taxi loop again after the rollout.
+ * Taxiing out: the taxi loop, the captain's briefing from its start (the loop lower under it),
+ * then the takeoff recording from the start of the roll, its wheels
+ * up on the animation's. In the air: the takeoff recording runs on into the climb, the cruise
+ * jets come in as it fades, and the landing recording takes over for the last seconds, its
+ * touchdown on the end of the flight; the captain's landing word starts with the descent (as the
+ * cabin comes up, LANDING_SECONDS + 1 before touchdown) and runs on into the rollout. Taxiing in: the landing runs on through the rollout, then
+ * the taxi loop again.
  */
-export function cabinSounds(step, left, into, playing = {}) {
-  const out = { taxi: 0, jets: 0, takeoff: null, landing: null };
-  const takeoff = playing.takeoff ?? null, landing = playing.landing ?? null;
+export function cabinSounds(step, left, into, lengths = {}) {
+  const out = { taxi: 0, jets: 0, briefing: null, takeoff: null, landing: null, landingBriefing: null };
+  const descent = LANDING_SECONDS + 1;
+  const within = (pos, length) => (pos >= 0 && pos < length ? pos : null);
   if (step === "taxiOut") {
-    if (left > TAKEOFF_SECONDS) out.taxi = 1;
-    else if (takeoff === null) out.takeoff = TAKEOFF_SOUND_LEAD + (TAKEOFF_SECONDS - left);
+    if (left > TAKEOFF_SECONDS) {
+      out.briefing = within(into, lengths.briefing ?? BRIEFING_SOUND_LENGTH);
+      out.taxi = out.briefing === null ? 1 : UNDER_BRIEFING;
+    } else out.takeoff = TAKEOFF_SOUND_LEAD + (TAKEOFF_SECONDS - left);
   } else if (step === "air") {
-    const roaring = takeoff !== null && takeoff < TAKEOFF_SOUND_FADES;
-    if (left <= TOUCHDOWN_AT && landing === null) out.landing = TOUCHDOWN_AT - left;
-    out.jets = roaring || landing !== null || out.landing !== null ? 0 : 1;
+    out.landing = left <= TOUCHDOWN_AT ? TOUCHDOWN_AT - left : null;
+    out.landingBriefing = left <= descent ? within(descent - left, lengths.landingBriefing ?? LANDING_BRIEFING_LENGTH) : null;
+    // The takeoff's roar into the climb, unless the landing has already begun.
+    if (out.landing === null) out.takeoff = within(TAKEOFF_SOUND_LEAD + TAKEOFF_SECONDS + into, TAKEOFF_SOUND_LENGTH);
+    out.jets = out.landing === null && (out.takeoff === null || out.takeoff >= TAKEOFF_SOUND_FADES) ? 1 : 0;
   } else if (step === "taxiIn") {
-    // Skipped straight here: the landing from where the rollout has got to.
-    if (landing === null && into < 25) out.landing = TOUCHDOWN_AT + into;
+    out.landing = within(TOUCHDOWN_AT + into, LANDING_SOUND_LENGTH);
+    out.landingBriefing = within(descent + into, lengths.landingBriefing ?? LANDING_BRIEFING_LENGTH);
     if (into >= ROLLOUT_SECONDS + 2) out.taxi = 1;
   }
   return out;
 }
-
 /** A repeatable random number for item i of a row. */
 const rand = (i, salt) => {
   const s = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
@@ -200,9 +247,10 @@ export class TaxiView {
 
   /** A strip of ground from x = a to x = b, running ahead from beside the window. */
   #strip(g, project, a, b, z0, fill) {
-    // Start where both edges are in front of the camera.
-    const start = z0 + Math.max(...[a, b].map((x) => (2 - (x - SEAT_X) * Math.sin(LOOK)) / Math.cos(LOOK)));
-    const pts = [project(a, 0, start), project(a, 0, z0 + FAR), project(b, 0, z0 + FAR), project(b, 0, start)];
+    // Each edge from where it first comes into view, just in front of the camera, so the strip
+    // reaches right up to the window (its near side runs along the bottom, off screen).
+    const start = (x) => z0 + (1.5 - (x - SEAT_X) * Math.sin(LOOK)) / Math.cos(LOOK);
+    const pts = [project(a, 0, start(a)), project(a, 0, z0 + FAR), project(b, 0, z0 + FAR), project(b, 0, start(b))];
     if (pts.some((p) => !p)) return;
     g.fillStyle = fill;
     g.beginPath();

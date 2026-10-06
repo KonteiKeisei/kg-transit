@@ -191,24 +191,46 @@ export function minutesUntil(plan, point) {
 export const midFlight = (plan) => minutesUntil(plan, "air") * 60;
 
 /** What the GM's skip button calls the start of each step. */
-const SKIP_TO = { board: "boarding", taxiOut: "taxi", air: "takeoff", taxiIn: "landing", deplane: "the gate", claim: "baggage claim" };
+const SKIP_TO = { board: "boarding", taxiOut: "taxi", deplane: "the gate", claim: "baggage claim" };
+/**
+ * The takeoff and the landing are skipped to a little before they happen, in real seconds (times
+ * the GM's speed): 10 seconds before the takeoff roll (the last 20 seconds of taxiing out,
+ * taxi-view.mjs TAKEOFF_SECONDS), and just before the landing's descent in the cabin begins (the
+ * last 20 seconds of the flight, LANDING_SECONDS), so the whole comedown shows.
+ */
+export const TAKEOFF_LEAD = 20 + 10;
+export const LANDING_LEAD = 20 + 2;
 
 /**
- * Where the GM's skip goes from so many seconds into the trip: the start of the next step, or
- * the encounter when it comes first (a skip never passes it), or the arrival after the last
- * step. { key: a step key | "encounter" | "arrival", label, at: seconds into the trip }.
+ * The points the GM's skip stops at, in order: the start of each step on the ground, the takeoff
+ * and the landing (a little before each), then the arrival. [{ key, label, at: seconds into the trip }].
  */
-export function nextSkip(plan, seconds, encounter = null) {
+export function skipPoints(plan, rate = 1) {
+  const points = [];
   let start = 0;
-  let next = null;
   for (const step of plan.steps) {
-    if (start > seconds + 0.5) {
-      next = { key: step.key, label: SKIP_TO[step.key] ?? step.label.toLowerCase(), at: start };
-      break;
+    const end = start + step.minutes * 60;
+    if (step.key === "taxiOut") {
+      points.push({ key: "taxiOut", label: SKIP_TO.taxiOut, at: start });
+      points.push({ key: "takeoff", label: "takeoff", at: Math.max(start, end - TAKEOFF_LEAD * rate) });
+    } else if (step.key === "air") {
+      points.push({ key: "landing", label: "landing", at: Math.max(start, end - LANDING_LEAD * rate) });
+    } else if (SKIP_TO[step.key]) {
+      points.push({ key: step.key, label: SKIP_TO[step.key], at: start });
     }
-    start += step.minutes * 60;
+    start = end;
   }
-  next ??= { key: "arrival", label: "arrival", at: plan.minutes * 60 };
+  points.push({ key: "arrival", label: "arrival", at: plan.minutes * 60 });
+  return points;
+}
+
+/**
+ * Where the GM's skip goes from so many seconds into the trip: the next skip point (skipPoints),
+ * or the encounter when it comes first (a skip never passes it). `rate`: the GM's speed.
+ * { key: a step key | "takeoff" | "landing" | "encounter" | "arrival", label, at: seconds into the trip }.
+ */
+export function nextSkip(plan, seconds, encounter = null, rate = 1) {
+  const next = skipPoints(plan, rate).find((p) => p.at > seconds + 0.5) ?? { key: "arrival", label: "arrival", at: plan.minutes * 60 };
   if (encounter && !encounter.done) {
     const at = encounter.minutes * 60;
     if (at > seconds + 0.5 && at <= next.at) return { key: "encounter", label: "encounter", at };
