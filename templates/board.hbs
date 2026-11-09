@@ -26,7 +26,7 @@
           {{/unless}}
         </li>
       {{else}}
-        <li class="empty">No player-owned characters have tokens on this scene.</li>
+        <li class="empty">No player-owned characters have tokens on this scene, and no party token is at this station.</li>
       {{/each}}
     </ul>
   </fieldset>
@@ -74,6 +74,7 @@
     </div>
   </fieldset>
 
+  {{#if alreadyRiding}}<p class="short">{{alreadyRiding}} is already riding. Get them off first, or select another party token.</p>{{/if}}
   <footer class="form-footer">
     <button type="submit" {{#unless canBoard}}disabled{{/unless}}>
       <i class="fa-solid fa-train-subway"></i> Board

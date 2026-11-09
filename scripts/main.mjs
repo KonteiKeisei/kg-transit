@@ -7,7 +7,8 @@ import { applyCityPreset, autoSetupCity, cityPreset, sceneCity, traceOnce } from
 import { FLAGS, MODULE_ID, SETTINGS, saveNetwork, sceneEnabled } from "./config.mjs";
 import { starterNetwork } from "./demo-network.mjs";
 import { NetworkEditor } from "./editor.mjs";
-import { RideController } from "./ride.mjs";
+import { RideController, partyRides } from "./ride.mjs";
+import { installHandoff, openBoard, planTrain, stationAt } from "./party-handoff.mjs";
 import { StationLayer } from "./station-layer.mjs";
 import { DEFAULT_THEME, THEMES } from "./themes.mjs";
 
@@ -69,7 +70,12 @@ Hooks.once("init", () => {
   register(SETTINGS.showToAll, { scope: "world", config: false, type: Boolean, default: false });
   register(SETTINGS.activeRide, {
     scope: "world", config: false, type: Object, default: {},
-    onChange: (value) => ride.onRideChanged(value)
+    onChange: (value) => ride.sync({ one: value })
+  });
+  // With KG Cities: one ride per party, by ride id (unused without it).
+  register(SETTINGS.activeRides, {
+    scope: "world", config: false, type: Object, default: {},
+    onChange: (value) => ride.sync({ many: value })
   });
 
   register(SETTINGS.dollarRate, {
@@ -98,7 +104,9 @@ Hooks.once("init", () => {
   });
 
   layer.onBoard = (originId) => {
-    if (ride.ride) return ui.notifications.warn("A ride is already under way.");
+    // On its own, one ride at a time; with KG Cities, each party rides on its own (the board
+    // dialog refuses a party that is already riding).
+    if (ride.rides.size && !partyRides()) return ui.notifications.warn("A ride is already under way.");
     new BoardDialog({ originId, layer, ride }).render({ force: true });
   };
 });
@@ -107,7 +115,17 @@ Hooks.once("ready", () => {
   ride.init();
   flights.init();
   registerAirports();
-  game.modules.get(MODULE_ID).api = { ride, flights, layer, openEditor, sceneCity, cityPreset, applyCityPreset };
+  game.modules.get(MODULE_ID).api = {
+    ride, flights, layer, openEditor, sceneCity, cityPreset, applyCityPreset,
+    // With KG Cities (party rides): the train for a trip across the map, the station a point is
+    // at, and the Board window for a party with its destination chosen (the GM in charge).
+    planTrain: (scene, from, to) => (partyRides() ? planTrain(scene, from, to) : null),
+    stationAt: (scene, point) => stationAt(scene, point),
+    board: ({ scene = canvas.scene, originId, partyTokenId, destinationId } = {}) => partyRides() && openBoard({ layer, ride, scene, originId, partyTokenId, destinationId }),
+    /** A ride or a flight is moving the world's clock (KG Cities' trips follow it meanwhile). */
+    drivingClock: () => ride.rides.size > 0 || !!flights.flight
+  };
+  installHandoff({ layer, ride });
   if (!globalThis.CALENDARIA) ui.notifications.warn("KG Transit needs Calendaria for its clock and weather.");
 });
 
@@ -149,7 +167,8 @@ Hooks.on("kgCities.airport", ({ airport, scene }) => {
   airportClick = double ? { id: null, at: 0 } : { id, at: now };
   if (!double) return;
   if (flights.flight) return ui.notifications.warn("A flight is already in the air.");
-  if (ride.ride) return ui.notifications.warn("A ride is under way.");
+  // A flight drives the clock itself: not while a train ride does too.
+  if (ride.rides.size) return ui.notifications.warn("A ride is under way.");
   new FlightDialog({ airport, scene, flights }).render({ force: true });
 });
 

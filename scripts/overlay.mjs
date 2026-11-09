@@ -75,6 +75,7 @@ export class RideOverlay {
       root.innerHTML = `<div class="kgt-banner"><span class="kgt-badge"></span><span class="kgt-banner-text"></span></div>`;
     } else {
       root.innerHTML = `
+        <nav class="kgt-rides" aria-label="Rides" hidden></nav>
         <div class="kgt-viewport">
           <div class="kgt-stage" style="width:${STAGE.w}px;height:${STAGE.h}px">
             <img class="kgt-interior" alt="">
@@ -109,6 +110,11 @@ export class RideOverlay {
       this.interiorEl.after(this.tintEl);
       this.theme = null;
       root.querySelector(".kgt-controls")?.addEventListener("click", (event) => this.#onControl(event));
+      // With KG Cities, a tab per ride this user can watch: the GM switches between them.
+      root.querySelector(".kgt-rides").addEventListener("click", (event) => {
+        const id = event.target.closest("[data-ride]")?.dataset.ride;
+        if (id) this.controller.focus(id);
+      });
       this.#buildStrip();
       // Draw the whole trip's scenery in the background before it is needed.
       this.weather = currentWeather();
@@ -210,6 +216,7 @@ export class RideOverlay {
       this.placedAt = now;
       const spot = this.expanded ? null : cornerSpot();
       Object.assign(this.root.style, spot ? { right: `${spot.right}px`, bottom: `${spot.bottom}px` } : { right: "", bottom: "" });
+      this.#drawTabs();
     }
     const trip = ride.trip;
     const elapsed = this.controller.displayElapsed(now);
@@ -258,6 +265,23 @@ export class RideOverlay {
 
     // The sound dips a little whenever the train is stopped.
     if (this.sound?.ready) this.sound.sound.volume = setting(SETTINGS.loopVolume) * (0.7 + 0.3 * state.speed);
+  }
+
+  /** The ride tabs: the GM's, when more than one ride is under way. A player sees their own party's ride. */
+  #drawTabs() {
+    const nav = this.root?.querySelector(".kgt-rides");
+    if (!nav) return;
+    const rides = game.user.isGM ? this.controller.watchable?.() ?? [] : [];
+    nav.hidden = rides.length < 2;
+    if (nav.hidden) return;
+    const key = rides.map((r) => `${r.id}:${r.id === this.rideId}`).join("|");
+    if (nav.dataset.key === key) return;
+    nav.dataset.key = key;
+    nav.innerHTML = rides.map((r) => {
+      const line = r.trip.lines[r.trip.segments[0]?.line]?.color ?? "#888";
+      const label = `${r.label ?? r.riders.map((x) => x.name).join(", ")} · to ${r.trip.names[r.trip.to]}`;
+      return `<button type="button" data-ride="${r.id}" class="${r.id === this.rideId ? "on" : ""}" aria-pressed="${r.id === this.rideId}" style="--line:${line}"><span class="dot"></span>${escapeHtml(label)}</button>`;
+    }).join("");
   }
 
   /** Hour, month and weather at a world time, for choosing scenery. */

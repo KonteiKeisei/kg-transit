@@ -148,22 +148,25 @@ export class TokenBounce {
   }
 
   #frame() {
-    const ride = this.controller.ride;
-    if (!ride || !canvas.ready || canvas.scene?.id !== ride.sceneId) return;
-    const speed = stateAt(ride.trip, this.controller.displayElapsed()).speed ?? 0;
+    if (!canvas.ready) return;
     const grid = canvas.scene.grid.size;
     const now = performance.now() / 1000;
     const seen = new Set();
-    rideTokens(ride, canvas.scene).forEach((doc, i) => {
-      const mesh = doc.object?.mesh;
-      if (!mesh || mesh.destroyed || !mesh.scale.y) return;
-      seen.add(mesh);
-      // A small hop about twice a second, each token a little out of step with the next.
-      const hop = Math.abs(Math.sin((now * 2.1 + i * 0.37) * Math.PI)) * grid * 0.035 * speed;
-      const lift = hop / mesh.scale.y;
-      mesh.pivot.y += lift - (this.lifted.get(mesh) ?? 0);
-      this.lifted.set(mesh, lift);
-    });
+    // Every ride on this scene (with KG Cities, several parties can ride at once).
+    for (const ride of this.controller.rides?.values() ?? []) {
+      if (canvas.scene?.id !== ride.sceneId) continue;
+      const speed = stateAt(ride.trip, this.controller.displayElapsed(performance.now(), ride)).speed ?? 0;
+      rideTokens(ride, canvas.scene).forEach((doc, i) => {
+        const mesh = doc.object?.mesh;
+        if (!mesh || mesh.destroyed || !mesh.scale.y) return;
+        seen.add(mesh);
+        // A small hop about twice a second, each token a little out of step with the next.
+        const hop = Math.abs(Math.sin((now * 2.1 + i * 0.37) * Math.PI)) * grid * 0.035 * speed;
+        const lift = hop / mesh.scale.y;
+        mesh.pivot.y += lift - (this.lifted.get(mesh) ?? 0);
+        this.lifted.set(mesh, lift);
+      });
+    }
     for (const [mesh, lift] of this.lifted) {
       if (seen.has(mesh)) continue;
       if (!mesh.destroyed) mesh.pivot.y -= lift;

@@ -1,6 +1,7 @@
 import { MODULE_ID, SETTINGS, formatClock, formatDuration, kmPerPixel, sceneNetwork, setting, stationPositions, worldDwell, worldTheme } from "./config.mjs";
 import { fareValue, formatMoney, pay, walletValue } from "./fare.mjs";
 import { findTrip, linesAt, stationOf } from "./network.mjs";
+import { partyRides } from "./ride.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -30,7 +31,8 @@ export class BoardDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     body: { template: `modules/${MODULE_ID}/templates/board.hbs` }
   };
 
-  constructor({ originId, layer, ride }) {
+  /** partyTokenId, destinationId (with KG Cities): the party boarding, and where to, chosen already. */
+  constructor({ originId, layer, ride, partyTokenId = null, destinationId = null }) {
     super();
     this.scene = canvas.scene;
     this.net = sceneNetwork(this.scene);
@@ -38,7 +40,8 @@ export class BoardDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     this.originId = originId;
     this.layer = layer;
     this.ride = ride;
-    this.destinationId = null;
+    this.wantParty = partyTokenId;
+    this.destinationId = destinationId && destinationId !== originId ? destinationId : null;
     this.waived = new Set();
     this.payFrom = "riders";
     this.showToAll = setting(SETTINGS.showToAll);
@@ -46,7 +49,8 @@ export class BoardDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   get title() {
-    return `Board at ${stationOf(this.net, this.originId)?.name ?? "the station"}`;
+    const at = `Board at ${stationOf(this.net, this.originId)?.name ?? "the station"}`;
+    return this.partyName ? `${at}: ${this.partyName}` : at;
   }
 
   /**
@@ -57,6 +61,7 @@ export class BoardDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     const here = stationPositions(this.net)[this.originId];
     const reach = NEAR_GRID * this.scene.grid.size;
     const near = (token) => here && Math.hypot(token.center.x - here.x, token.center.y - here.y) <= reach;
+    if (partyRides() && this.#findParty(here, near)) return;
     const sceneActorIds = new Set(this.scene.tokens.map((t) => t.actorId));
     this.candidates = game.actors.filter((a) => a.type === "character" && a.hasPlayerOwner && sceneActorIds.has(a.id));
     const tokens = canvas.tokens.placeables.filter((t) => t.actor && near(t));
@@ -73,6 +78,33 @@ export class BoardDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     else if (partyToken?.actor?.type === "character") chosen.add(partyToken.actor.id);
     for (const t of tokens) if (t.actor.type === "character") chosen.add(t.actor.id);
     this.selected = chosen;
+  }
+
+  /**
+   * With KG Cities, a party rides as a party: the selected party token, else the party token
+   * nearest the station within reach. Its members are the riders (a party of one rides as that
+   * one), its purse can pay, its token is what moves along the line. False when there is none
+   * here (then the riders are found as without KG Cities).
+   */
+  #findParty(here, near) {
+    const isParty = (t) => t.actor?.type === "group";
+    const selected = canvas.tokens.controlled.filter(isParty);
+    const nearest = canvas.tokens.placeables.filter((t) => isParty(t) && near(t))
+      .sort((a, b) => Math.hypot(a.center.x - here.x, a.center.y - here.y) - Math.hypot(b.center.x - here.x, b.center.y - here.y));
+    const named = this.wantParty ? canvas.tokens.get(this.wantParty) : null;
+    const token = (named && isParty(named) ? named : null) ?? (selected.length === 1 ? selected[0] : nearest[0]);
+    if (!token) return false;
+    const cities = game.modules.get("kg-cities")?.api;
+    const members = cities?.parties?.members?.(token.actor) ?? partyMembers(token.actor);
+    // People ride; a party's vehicles stay where they are parked.
+    this.candidates = members.filter((a) => a.type !== "group" && a.type !== "vehicle" && !a.getFlag?.("kg-cities", "vehicle")?.vehicle);
+    this.party = token.actor;
+    this.partyName = token.name;
+    this.tokenIds = [token.id];
+    this.partyTokenId = token.id;
+    this.selected = new Set(this.candidates.map((a) => a.id));
+    this.alreadyRiding = !!this.ride.partyRide(token.id);
+    return true;
   }
 
   #trip() {
@@ -106,10 +138,12 @@ export class BoardDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       fare: formatMoney(fare),
       hasFare: fare > 0,
       total: formatMoney(fare * paying),
-      party: this.party && fare > 0 && { name: this.party.name, cash: formatMoney(partyCash), short: partyShort },
+      // An empty purse says so ("free" would read as the fare being free).
+      party: this.party && fare > 0 && { name: this.party.name, cash: partyCash ? formatMoney(partyCash) : "no money", short: partyShort },
       payFromParty: this.payFrom === "party",
       showToAll: this.showToAll,
-      canBoard: !!trip && riders.some((r) => r.checked) && !riders.some((r) => r.short) && !partyShort
+      canBoard: !!trip && riders.some((r) => r.checked) && !riders.some((r) => r.short) && !partyShort && !this.alreadyRiding,
+      alreadyRiding: this.alreadyRiding ? this.partyName : null
     };
   }
 
@@ -200,7 +234,8 @@ export class BoardDialog extends HandlebarsApplicationMixin(ApplicationV2) {
       showToAll: this.showToAll,
       sceneId: this.scene.id,
       tokenIds: this.tokenIds,
-      partyTokenId: this.partyTokenId
+      partyTokenId: this.partyTokenId,
+      label: this.partyName ?? null
     });
   }
 }

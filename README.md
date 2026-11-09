@@ -227,6 +227,19 @@ The network's settings are summed up in one line near the top of the editor (nam
 - **Getting off**, the tokens gather just below the stop (or where the emergency stop left them) in as tight a circle as they make: the party token in the middle, the rest in evenly spaced rings around it. A chat card records it.
 - If Calendaria's real-time clock was running, it is paused for the ride and restarted afterwards.
 
+### Party rides (with KG Cities)
+
+With **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** active, each party rides on its own, and several can ride at once. Without KG Cities, nothing here changes: one ride at a time, as above.
+
+- **A party boards as a party.** Board takes the selected party token, or else the party token nearest the station. Its members are the riders (a party of one rides as that one person): they pay the fares, and their players see the ride. A party's vehicles stay parked. Only the party token travels the line.
+- **One ride per party.** A party already riding can't board again until it gets off. Another party can board at the same time, on any line.
+- **One clock for every ride.** The world clock runs once for all of them, in real time. **Skip**, **Get off next stop** and **Arrive** run the clock on, so every other ride moves on with it; **Emergency stop** ends only its own ride.
+- **The ride window** shows one ride at a time. Each player sees their own party's ride, and only that. The GM gets a row of tabs across the top while more than one ride is under way, to switch between them; the camera and the GM buttons follow the tab the GM is on.
+- **Boarding, fares and every control stay the GM's**, as without KG Cities.
+- **From KG Cities' travel.** A party that walks, cabs, drives or teleports to a station gets the Board window there, that party chosen. KG Cities' travel window also offers the **Train**: the best stations to walk to and from, door to door; Board then opens at the first with the last chosen, and after the ride the party walks on to where it was going.
+- **One clock.** While a ride or a flight runs the world's clock, KG Cities' trips in the streets move with it rather than running it themselves.
+- A flight still waits until no train ride is under way (it drives the clock itself).
+
 ## 12. Air travel between cities
 
 On a **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** scene, the city's airports of 1986 are drawn on the map in violet: the terminals as buildings, the airfield's edge dashed. Hover one for its card. The cities and their airports: Boston (Logan), New York (JFK, LaGuardia, Newark), Washington (National, Dulles), Baltimore (BWI, which serves Washington too), Philadelphia, Atlanta (Hartsfield), Chicago (O'Hare, Midway), Detroit (Metro, City), St. Louis (Lambert), Miami (Miami, Fort Lauderdale), Austin (Robert Mueller), Las Vegas (McCarran), Los Angeles (LAX, Burbank, Long Beach), San Francisco (SFO, Oakland, San Jose).

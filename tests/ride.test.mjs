@@ -48,7 +48,8 @@ test("emergency stop cannot be undone by an in-flight fast-travel tick", async (
   };
   try {
     controller.onRideChanged(ride);
-    controller.ffSeenAt = performance.now() - 100;
+    // When this client first saw the fast travel (kept per ride since party rides).
+    controller.ffSeenAt.set("ride", performance.now() - 100);
     const ticking = tick();
     await started;
     const stopping = controller.emergencyStop();

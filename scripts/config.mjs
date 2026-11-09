@@ -13,6 +13,7 @@ export const SETTINGS = {
   iconSize: "iconSize",
   showToAll: "showRideToAll",
   activeRide: "activeRide",
+  activeRides: "activeRides",
   activeFlight: "activeFlight",
   dollarRate: "dollarRate",
   liveryFolder: "liveryFolder",
