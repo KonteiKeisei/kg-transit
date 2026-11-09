@@ -43,6 +43,16 @@ export class RideController {
 
   init() {
     Hooks.on("updateWorldTime", () => { this.worldSeenAt = performance.now(); });
+    game.socket.on("module.kg-transit", async (request) => {
+      if (request?.action !== "emergencyStop" || !this.isDriver
+        || request.rideId !== this.ride?.id || !game.users.get(request.userId)?.isGM) return;
+      try {
+        await this.emergencyStop();
+      } catch (err) {
+        console.error(MODULE_ID + " | emergency stop failed", err);
+        ui.notifications.error("The emergency stop failed. See the console for details.");
+      }
+    });
     this.onRideChanged(setting(SETTINGS.activeRide));
   }
 
@@ -185,9 +195,15 @@ export class RideController {
   /** Stop the train where it is and put everyone off there, ending the ride (no more time passes). */
   async emergencyStop() {
     const ride = this.ride;
-    if (!ride || !this.isDriver) return;
+    if (!ride || !game.user.isGM) return;
+    // Every GM sees the control, but only the active GM drives and deposits the tokens.
+    if (!this.isDriver) {
+      game.socket.emit("module.kg-transit", { action: "emergencyStop", rideId: ride.id, userId: game.user.id });
+      return;
+    }
     const elapsed = ride.ff ? this.#ffTarget(ride.ff).at : this.#elapsedNow(ride);
-    if (elapsed - (game.time.worldTime - ride.start) >= 1) await this.#advance(Math.floor(elapsed - (game.time.worldTime - ride.start)));
+    this.#stopDriving();
+    // Clear the shared ride immediately; clock hooks must not delay an emergency stop.
     const scene = game.scenes.get(ride.sceneId);
     const net = sceneNetwork(scene);
     const at = scene ? trainPoint(ride.trip, elapsed, stationPositions(net), routeShapes(net)) : null;
@@ -225,6 +241,7 @@ export class RideController {
         const { at: target, done } = this.#ffTarget(ride.ff, now);
         if (done) {
           await this.#advance(ride.ff.to - elapsed);
+          if (this.ride !== ride) return;
           if (ride.ff.then === "finish") await this.#finish(ride.trip, { early: !!ride.ff.early });
           else {
             // Back to real time from the stop reached.
@@ -245,6 +262,7 @@ export class RideController {
       this.pending += dt;
       if (elapsed + this.pending >= total) {
         await this.#advance(total - elapsed);
+        if (this.ride !== ride) return;
         await this.#finish(ride.trip);
       } else {
         if (this.pending >= COMMIT_EVERY) {
@@ -292,6 +310,8 @@ export class RideController {
 
   /** Every so often, move the tokens to where the train is now (active GM only). */
   async #moveAlong(ride, elapsed, now) {
+    // A clock write can yield while an emergency stop ends the ride.
+    if (this.ride !== ride) return;
     const every = ride.ff ? TOKEN_STEP_FAST_MS : TOKEN_STEP_MS;
     if (now - this.lastTokenStep < every) return;
     this.lastTokenStep = now;

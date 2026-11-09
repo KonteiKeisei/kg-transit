@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTINGS, formatClock, formatDuration, kmPerPixel, sceneNetwork, setting, stationPositions, worldTheme } from "./config.mjs";
+import { MODULE_ID, SETTINGS, formatClock, formatDuration, kmPerPixel, sceneNetwork, setting, stationPositions, worldDwell, worldTheme } from "./config.mjs";
 import { fareValue, formatMoney, pay, walletValue } from "./fare.mjs";
 import { findTrip, linesAt, stationOf } from "./network.mjs";
 
@@ -57,7 +57,8 @@ export class BoardDialog extends HandlebarsApplicationMixin(ApplicationV2) {
     const here = stationPositions(this.net)[this.originId];
     const reach = NEAR_GRID * this.scene.grid.size;
     const near = (token) => here && Math.hypot(token.center.x - here.x, token.center.y - here.y) <= reach;
-    this.candidates = game.actors.filter((a) => a.type === "character" && a.hasPlayerOwner);
+    const sceneActorIds = new Set(this.scene.tokens.map((t) => t.actorId));
+    this.candidates = game.actors.filter((a) => a.type === "character" && a.hasPlayerOwner && sceneActorIds.has(a.id));
     const tokens = canvas.tokens.placeables.filter((t) => t.actor && near(t));
     const designated = this.net.partyTokenId ? canvas.tokens.get(this.net.partyTokenId) : null;
     const partyToken = designated ?? tokens.find((t) => t.actor.type === "group");
@@ -75,7 +76,7 @@ export class BoardDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   #trip() {
-    return this.destinationId ? findTrip(this.net, this.originId, this.destinationId, this.kmPerPx, worldTheme()) : null;
+    return this.destinationId ? findTrip(this.net, this.originId, this.destinationId, this.kmPerPx, worldTheme(), worldDwell()) : null;
   }
 
   async _prepareContext() {

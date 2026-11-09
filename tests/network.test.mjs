@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { DEMO, KM_PER_PX, starterNetwork } from "../scripts/demo-network.mjs";
-import { findTrip, lighten, linesAt, normalize, runSeconds, truncateTrip, tripStops } from "../scripts/network.mjs";
+import { buildTrip, dwellSeconds, dwellValue, findTrip, lighten, linesAt, normalize, runSeconds, truncateTrip, tripStops } from "../scripts/network.mjs";
 
 const net = normalize(DEMO);
 const trip = (a, b) => findTrip(net, a, b, KM_PER_PX);
@@ -113,4 +113,57 @@ test("the next stop and the stop the train stands at", async () => {
   const off = endAfterSegment(trip, 0);
   assert.equal(off.to, "b");
   assert.equal(off.total, 100);
+});
+test("dwell settings inherit stop, scene, world and train type, preserving zero", () => {
+  const line = { kind: "steam" };
+  const net = normalize({ dwell: 15, stations: [{ id: "a", dwell: 0 }, { id: "b" }] });
+  assert.equal(dwellSeconds(line, net, "a", 45), 0);
+  assert.equal(dwellSeconds(line, net, "b", 45), 15);
+  net.dwell = null;
+  assert.equal(dwellSeconds(line, net, "b", 45), 45);
+  assert.equal(dwellSeconds(line, net, "b"), 60);
+  for (const value of [null, "", " ", -1, NaN, Infinity, "bad", false]) assert.equal(dwellValue(value), null);
+  assert.equal(dwellValue("0"), 0);
+  assert.equal(dwellValue("12.5"), 12.5);
+});
+
+test("per-stop dwell changes intermediate gaps and works in either direction", () => {
+  const n = normalize(DEMO);
+  n.dwell = 15;
+  n.stations.find((s) => s.id === "b").dwell = 0;
+  n.stations.find((s) => s.id === "c").dwell = 75;
+  const forward = findTrip(n, "a", "d", KM_PER_PX, "modern", 45);
+  assert.equal(forward.segments[1].depart - forward.segments[0].arrive, 0);
+  assert.equal(forward.segments[2].depart - forward.segments[1].arrive, 75);
+  assert.equal(forward.segments[0].depart, 0);
+  const backward = findTrip(n, "d", "a", KM_PER_PX, "modern", 45);
+  assert.equal(backward.segments[1].depart - backward.segments[0].arrive, 75);
+  assert.equal(backward.segments[2].depart - backward.segments[1].arrive, 0);
+});
+
+test("world dwell is baked into trips and transfer waits allow the longer duration", () => {
+  const n = normalize(DEMO);
+  const normal = findTrip(n, "a", "d", KM_PER_PX);
+  const world = findTrip(n, "a", "d", KM_PER_PX, "modern", 10);
+  assert.equal(world.total, normal.total - 40);
+  n.stations.find((s) => s.id === "c").dwell = 300;
+  const transfer = buildTrip(n, [
+    { lineId: "central", stops: ["a", "b", "c"] },
+    { lineId: "harbour", stops: ["c", "g", "h"] }
+  ], KM_PER_PX);
+  assert.equal(transfer.transfers[0].seconds, 300);
+  assert.equal(transfer.segments[2].depart - transfer.segments[1].arrive, 300);
+});
+
+test("routing accounts for a long dwell and chooses a faster alternative", () => {
+  const n = normalize({
+    stations: [{ id: "a" }, { id: "b", dwell: 600 }, { id: "c" }, { id: "d" }],
+    lines: [
+      { id: "slow", stops: ["a", "b", "d"], segments: [{ minutes: 1 }, { minutes: 1 }] },
+      { id: "fast", stops: ["a", "c", "d"], segments: [{ minutes: 2 }, { minutes: 2 }] }
+    ]
+  });
+  const t = findTrip(n, "a", "d", 0);
+  assert.deepEqual(tripStops(t), ["a", "c", "d"]);
+  assert.equal(t.total, 270);
 });

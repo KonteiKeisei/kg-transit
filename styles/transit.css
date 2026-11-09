@@ -47,10 +47,14 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 220px;
+  --rider-row-height: 32px;
+  max-height: calc(10 * var(--rider-row-height));
   overflow-y: auto;
 }
 .kg-transit-board .riders li {
+  box-sizing: border-box;
+  height: var(--rider-row-height);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -69,6 +73,8 @@
   border-radius: 4px;
   object-fit: cover;
 }
+.kg-transit-board .riders .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kg-transit-board .riders label { min-width: 0; }
 .kg-transit-board .riders .cash { font-variant-numeric: tabular-nums; opacity: 0.85; }
 .kg-transit-board .riders .waive { flex: 0 0 auto; width: auto; padding: 0 8px; line-height: 22px; }
 .kg-transit-board .short, .kg-transit-board .short .cash { color: #e5534b; opacity: 1; }
@@ -761,7 +767,7 @@
   background: var(--ed-tint);
   border-radius: 0 0 6px 6px;
 }
-.kgt-ed-stopopts label { flex: 1; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ed-muted); }
+.kgt-ed-stopopts label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ed-muted); }
 .kgt-ed-stopopts select { color: var(--color-text-primary, inherit); }
 
 /* KG Cities scenes: which city and year the network is, with a reset. */
@@ -1094,3 +1100,4 @@ body.kgt-flying .kgc-card { display: none; }
 #kg-transit-flight .kgt-flight-step { display: flex; align-items: baseline; gap: 0.5em; }
 #kg-transit-flight .kgt-flight-step em:not(:empty)::before { content: "·"; margin-right: 0.5em; opacity: 0.7; }
 #kg-transit-flight .kgt-flight-step em { font-style: normal; font-size: 0.8em; font-variant-numeric: tabular-nums; opacity: 0.9; }
+.kgt-ed-stopopts input[type="number"] { width: 100%; min-width: 0; }

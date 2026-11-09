@@ -18,7 +18,7 @@ const MIN_RUN = 45;
 const DEFAULT_RUN = 120;
 
 export function emptyNetwork(name = "Metro") {
-  return { name, badge: "M", theme: null, fare: { amount: 0, coin: "sp" }, transferMinutes: 4, partyTokenId: null, cars: {}, preset: null, lines: [], stations: [] };
+  return { name, badge: "M", theme: null, fare: { amount: 0, coin: "sp" }, transferMinutes: 4, dwell: null, partyTokenId: null, cars: {}, preset: null, lines: [], stations: [] };
 }
 
 /** Short random id for new lines and stations. */
@@ -30,8 +30,9 @@ export function newId() {
 export function normalize(net) {
   const n = { ...emptyNetwork(), ...(net ?? {}) };
   n.fare = { amount: 0, coin: "sp", ...(n.fare ?? {}) };
+  n.dwell = dwellValue(n.dwell);
   n.cars = n.cars && typeof n.cars === "object" ? n.cars : {};
-  n.stations = (n.stations ?? []).map((s) => ({ name: "Stop", x: null, y: null, theme: null, platform: "auto", ...s }));
+  n.stations = (n.stations ?? []).map((s) => ({ name: "Stop", x: null, y: null, theme: null, platform: "auto", ...s, dwell: dwellValue(s.dwell) }));
   const known = new Set(n.stations.map((s) => s.id));
   n.lines = (n.lines ?? []).map((line) => {
     const stops = (line.stops ?? []).filter((id) => known.has(id));
@@ -89,26 +90,48 @@ export function runSeconds(net, line, index, kmPerPx) {
   return Math.max(MIN_RUN, Math.round((km / (KINDS[line.kind] ?? KINDS.metro).kmh) * 3600));
 }
 
-export function dwellSeconds(line) {
-  return (KINDS[line.kind] ?? KINDS.metro).dwell;
+/** Blank or invalid overrides inherit; zero explicitly means no dwell. */
+export function dwellValue(value) {
+  if (value == null || value === "" || typeof value === "boolean") return null;
+  if (typeof value === "string" && !value.trim()) return null;
+  const seconds = Number(value);
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
+}
+
+/** Stop > scene > world > train type, in seconds. */
+export function dwellSeconds(line, net = {}, stationId = null, worldDwell = null) {
+  return dwellValue(stationOf({ stations: net.stations ?? [] }, stationId)?.dwell)
+    ?? dwellValue(net.dwell) ?? dwellValue(worldDwell)
+    ?? (KINDS[line.kind] ?? KINDS.metro).dwell;
+}
+
+/** Transfers allow enough time for changing trains and both trains' dwell settings. */
+function transferSeconds(net, stationId, fromLine, toLine, worldDwell) {
+  return Math.max((net.transferMinutes ?? 4) * 60,
+    dwellSeconds(fromLine, net, stationId, worldDwell),
+    dwellSeconds(toLine, net, stationId, worldDwell));
 }
 
 /**
  * Quickest trip between two stations. Returns the trip, or null when the stations are the
  * same, unknown or not connected.
  */
-export function findTrip(net, fromId, toId, kmPerPx, worldTheme = DEFAULT_THEME) {
+export function findTrip(net, fromId, toId, kmPerPx, worldTheme = DEFAULT_THEME, worldDwell = null) {
   if (fromId === toId || !stationOf(net, fromId) || !stationOf(net, toId)) return null;
-  const transfer = (net.transferMinutes ?? 4) * 60;
-
   const neighbours = (key) => {
     const [station, lineId] = key.split("@");
     const line = lineOf(net, lineId);
     const out = [];
     const i = line.stops.indexOf(station);
-    if (i > 0) out.push({ to: `${line.stops[i - 1]}@${lineId}`, cost: runSeconds(net, line, i - 1, kmPerPx) + dwellSeconds(line) });
-    if (i < line.stops.length - 1) out.push({ to: `${line.stops[i + 1]}@${lineId}`, cost: runSeconds(net, line, i, kmPerPx) + dwellSeconds(line) });
-    for (const other of linesAt(net, station)) if (other.id !== lineId) out.push({ to: `${station}@${other.id}`, cost: transfer });
+    // Charge dwell on arrival at intermediate stops, then only the extra transfer time.
+    const dwellAt = (id) => id === toId ? 0 : dwellSeconds(line, net, id, worldDwell);
+    if (i > 0) out.push({ to: `${line.stops[i - 1]}@${lineId}`, cost: runSeconds(net, line, i - 1, kmPerPx) + dwellAt(line.stops[i - 1]) });
+    if (i < line.stops.length - 1) out.push({ to: `${line.stops[i + 1]}@${lineId}`, cost: runSeconds(net, line, i, kmPerPx) + dwellAt(line.stops[i + 1]) });
+    for (const other of linesAt(net, station)) if (other.id !== lineId) out.push({
+      to: `${station}@${other.id}`,
+      cost: Math.max(0, transferSeconds(net, station, line, other, worldDwell)
+        - (station === fromId ? 0 : dwellAt(station)))
+    });
     return out;
   };
 
@@ -144,7 +167,7 @@ export function findTrip(net, fromId, toId, kmPerPx, worldTheme = DEFAULT_THEME)
     if (leg?.lineId === lineId) leg.stops.push(station);
     else legs.push({ lineId, stops: [station] });
   }
-  return buildTrip(net, legs.filter((leg) => leg.stops.length > 1), kmPerPx, worldTheme);
+  return buildTrip(net, legs.filter((leg) => leg.stops.length > 1), kmPerPx, worldTheme, worldDwell);
 }
 
 /** Binary heap of [cost, key] pairs, cheapest first (big city networks have thousands of nodes). */
@@ -192,7 +215,7 @@ function directionLabel(net, line, stops) {
  * carries the names, colours and themes it needs, so every client can show it without the
  * network. `worldTheme` is the module's default theme.
  */
-export function buildTrip(net, legs, kmPerPx, worldTheme = DEFAULT_THEME) {
+export function buildTrip(net, legs, kmPerPx, worldTheme = DEFAULT_THEME, worldDwell = null) {
   const segments = [];
   const transfers = [];
   const names = {};
@@ -209,7 +232,7 @@ export function buildTrip(net, legs, kmPerPx, worldTheme = DEFAULT_THEME) {
       platforms[id] = stationTheme(net, line, station, worldTheme);
     }
     if (legIndex > 0) {
-      const transfer = (net.transferMinutes ?? 4) * 60;
+      const transfer = transferSeconds(net, leg.stops[0], lineOf(net, legs[legIndex - 1].lineId), line, worldDwell);
       transfers.push({ station: leg.stops[0], at: t, seconds: transfer, fromLine: legs[legIndex - 1].lineId, toLine: line.id });
       t += transfer;
     }
@@ -218,7 +241,7 @@ export function buildTrip(net, legs, kmPerPx, worldTheme = DEFAULT_THEME) {
       const to = leg.stops[i];
       const forward = line.stops.indexOf(to) > line.stops.indexOf(from);
       const index = forward ? line.stops.indexOf(from) : line.stops.indexOf(to);
-      if (i > 1) t += dwellSeconds(line);
+      if (i > 1) t += dwellSeconds(line, net, from, worldDwell);
       const run = runSeconds(net, line, index, kmPerPx);
       const scenery = line.segments[index]?.scenery ?? DEFAULT_SCENERY;
       const theme = segmentTheme(net, line, stationOf(net, from), stationOf(net, to), worldTheme);

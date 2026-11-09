@@ -45,6 +45,11 @@
       <label data-tooltip="Minutes to change trains at a transfer station">Transfer
         <span class="kgt-ed-pair"><input type="number" data-field="transfer" value="{{net.transferMinutes}}" min="0" step="1"> min</span>
       </label>
+      <label class="kgt-ed-wide" data-tooltip="Blank inherits the world setting or train type. A stop can override this scene value.">
+        Scene stop dwell (seconds)
+        <input type="number" data-field="sceneDwell" value="{{sceneDwell}}" min="0" step="1" placeholder="{{sceneDwellDefault}}">
+        <span class="kgt-ed-muted">Default: {{sceneDwellDefaultLabel}}</span>
+      </label>
       <label class="kgt-ed-wide" data-tooltip="Optional. This token rides the line on the map, and its members are ticked as riders.">Party token
         <select data-field="partyToken">
           <option value="">None, use the tokens at the station</option>
@@ -113,12 +118,13 @@
               <span class="kgt-ed-node {{#unless placed}}unplaced{{/unless}}"></span>
               <i class="fa-solid fa-grip-vertical kgt-ed-grip" data-tooltip="Drag to reorder"></i>
               <input type="text" class="kgt-ed-stopname" data-field="stationName" data-station="{{id}}" value="{{name}}" aria-label="Stop name">
+              <span class="kgt-ed-chip" data-tooltip="{{dwellLabel}}">{{dwellSeconds}} s</span>
               {{#each transferLines}}<span class="kgt-ed-chip"><span class="kgt-ed-dot" style="background:{{color}}"></span>{{name}}</span>{{/each}}
               {{#if theme}}<span class="kgt-ed-chip" data-tooltip="Theme for this stop"><i class="fa-solid {{theme.glyph}}"></i>{{theme.label}}</span>{{/if}}
               {{#if platformChip}}<span class="kgt-ed-chip" data-tooltip="Platform"><i class="fa-solid fa-person-shelter"></i>{{platformChip}}</span>{{/if}}
               <button type="button" class="kgt-ed-icon {{#if placed}}placed{{else}}unplaced{{/if}}" data-action="place"
                 data-tooltip="{{#if placed}}Move on the map{{else}}Place on the map{{/if}}"><i class="fa-solid {{#if placed}}fa-location-dot{{else}}fa-crosshairs{{/if}}"></i></button>
-              <button type="button" class="kgt-ed-icon {{#if transferOpen}}open{{/if}}" data-action="toggleTransfer" data-tooltip="Stop options: transfers, theme, platform"><i class="fa-solid fa-sliders"></i></button>
+              <button type="button" class="kgt-ed-icon {{#if transferOpen}}open{{/if}}" data-action="toggleTransfer" data-tooltip="Stop options: dwell time, transfers, theme, platform"><i class="fa-solid fa-sliders"></i></button>
               <button type="button" class="kgt-ed-icon" data-action="removeStop" data-tooltip="Remove from this line"><i class="fa-solid fa-xmark"></i></button>
             </li>
             {{#if transferOpen}}
@@ -134,6 +140,11 @@
                   {{/each}}
                 </div>
                 <div class="kgt-ed-stopopts">
+                  <label data-tooltip="Blank inherits the scene, world, or train type. Zero means no dwell.">
+                    Dwell (seconds)
+                    <input type="number" data-field="stationDwell" data-station="{{id}}" value="{{dwell}}" min="0" step="1" placeholder="{{dwellDefault}}">
+                    <span class="kgt-ed-muted">Default: {{dwellDefaultLabel}}</span>
+                  </label>
                   <label data-tooltip="The platform here and the track either side of it">Theme
                     <select data-field="stationTheme" data-station="{{id}}">{{#each themes}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
                   </label>

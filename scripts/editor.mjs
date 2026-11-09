@@ -1,9 +1,9 @@
 import { CARS, DEFAULT_SCENERY, KINDS, PLATFORMS, SCENERY, SUGGESTED_COLORS, isTunnel } from "./catalog.mjs";
 import { presetLabel } from "./cities.mjs";
 import { applyCityPreset, cityPreset, sceneCity, traceCityTracks } from "./city-setup.mjs";
-import { FLAGS, MODULE_ID, escapeHtml, kmPerPixel, saveNetwork, sceneNetwork, worldTheme } from "./config.mjs";
+import { FLAGS, MODULE_ID, escapeHtml, kmPerPixel, saveNetwork, sceneNetwork, worldDwell, worldTheme } from "./config.mjs";
 import { COINS, fareValue, formatMoney } from "./fare.mjs";
-import { isPlaced, linesAt, newId, normalize, runSeconds } from "./network.mjs";
+import { dwellSeconds, dwellValue, isPlaced, linesAt, newId, normalize, runSeconds } from "./network.mjs";
 import { segmentNodes } from "./route-path.mjs";
 import { THEMES, isTheme, pickTheme, themeChoices } from "./themes.mjs";
 
@@ -95,6 +95,9 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
     const party = partyTokens.find((t) => t.selected);
 
     const world = worldTheme();
+    const worldStopDwell = worldDwell();
+    const inheritedDwell = (line) => dwellSeconds(line, { ...net, stations: [] }, null, worldStopDwell);
+    const dwellSource = net.dwell !== null ? "scene" : worldStopDwell !== null ? "world" : "train type";
     const sceneTheme = pickTheme(net.theme, world);
     const lineTheme = line && pickTheme(line.theme, sceneTheme);
     const stops = line ? line.stops.map((id, i) => {
@@ -109,6 +112,11 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
         index: i,
         name: station.name,
         placed: isPlaced(station),
+        dwell: station.dwell ?? "",
+        dwellSeconds: dwellSeconds(line, net, id, worldStopDwell),
+        dwellDefault: inheritedDwell(line),
+        dwellDefaultLabel: `${inheritedDwell(line)} s, ${dwellSource}`,
+        dwellLabel: `${dwellSeconds(line, net, id, worldStopDwell)} s dwell (${station.dwell !== null ? "stop" : dwellSource})`,
         theme: own && { label: own.label, glyph: own.glyph },
         // Only worth a label when it differs from what auto would pick (city stops are all set).
         platformChip: platform === "auto" || platform === autoPlatform ? null : PLATFORMS[platform].label,
@@ -150,6 +158,10 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
       cars: Object.entries(CARS).map(([key, car]) => ({
         key, label: car.label, sound: net.cars?.[key]?.sound ?? "", interior: net.cars?.[key]?.interior ?? ""
       })),
+      sceneDwell: net.dwell ?? "",
+      sceneDwellDefault: worldStopDwell ?? "",
+      sceneDwellDefaultLabel: worldStopDwell !== null ? `${worldStopDwell} s, world`
+        : Object.values(KINDS).map((kind) => `${kind.label} ${kind.dwell} s`).join(", "),
       netOpen: this.netOpen,
       fareText: formatMoney(fareValue(net.fare)),
       partyLabel: party?.name ?? "none",
@@ -235,6 +247,7 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
       case "badge": net.badge = String(value || "M").slice(0, 2); break;
       case "fareAmount": net.fare.amount = Math.max(0, value ?? 0); break;
       case "fareCoin": net.fare.coin = value; break;
+      case "sceneDwell": net.dwell = dwellValue(value); break;
       case "transfer": net.transferMinutes = Math.max(0, value ?? 0); break;
       case "partyToken": net.partyTokenId = value || null; break;
       case "carSound":
@@ -249,11 +262,13 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
       case "lineTheme": if (line) line.theme = isTheme(value) ? value : null; break;
       case "stationName":
       case "stationTheme":
+      case "stationDwell":
       case "stationPlatform": {
         const station = this.station(el.dataset.station);
         if (!station) break;
         if (field === "stationName") station.name = value || "Stop";
         else if (field === "stationTheme") station.theme = isTheme(value) ? value : null;
+        else if (field === "stationDwell") station.dwell = dwellValue(value);
         else station.platform = PLATFORMS[value] ? value : "auto";
         break;
       }

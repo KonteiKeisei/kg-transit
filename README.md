@@ -291,7 +291,9 @@ For each stretch without a minutes value:
 time = straight-line map distance (in the scene's grid units, converted to km) / train speed
 ```
 
-Speeds and stops: Metro 36 km/h and 30 s, Light rail 28 km/h and 25 s, Tram 16 km/h and 20 s, Express 60 km/h and 40 s, Steam 40 km/h and 60 s. Each stretch takes at least 45 seconds. Changing trains adds the network's transfer time.
+Speeds and stops: Metro 36 km/h and 30 s, Light rail 28 km/h and 25 s, Tram 16 km/h and 20 s, Express 60 km/h and 40 s, Steam 40 km/h and 60 s. Each stretch takes at least 45 seconds. Changing trains allows the longer of the network's transfer time and the trains' dwell times.
+
+Set dwell in seconds at three levels: **Configure Settings > KG Transit > Default stop dwell (seconds)** for the world, **Transit network > network settings > Scene stop dwell (seconds)** for the scene, or a stop's **sliders button > Dwell (seconds)**. Stop overrides scene, scene overrides world, and blank inherits the train type. The editor shows default values and their source. Zero means no dwell. Dwell applies at intermediate stops; boarding departs immediately and arrival ends the ride.
 
 Grid units understood: mi, km, m, yd, ft (and their full names). Anything else is treated as feet.
 

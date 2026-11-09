@@ -28,6 +28,12 @@ Hooks.once("init", () => {
       if (editor?.rendered) editor.render();
     }
   });
+  register(SETTINGS.dwell, {
+    name: "Default stop dwell (seconds)",
+    hint: "Seconds spent at intermediate stops. A stop overrides its scene, which overrides this value. Leave blank for train-type defaults: Metro 30, light rail 25, tram 20, express 40, steam 60. Zero means no dwell. Transfers still allow time to change trains.",
+    scope: "world", config: true, type: String, default: "",
+    onChange: () => { if (editor?.rendered) editor.render(); }
+  });
   register(SETTINGS.cityAuto, {
     name: "Set up city networks",
     hint: "On a KG Cities scene, set up that city's real rail network as it stood in the scene's era (1980s or today) the first time the scene is viewed.",

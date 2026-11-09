@@ -1,4 +1,4 @@
-import { normalize } from "./network.mjs";
+import { dwellValue, normalize } from "./network.mjs";
 import { DEFAULT_THEME, isTheme } from "./themes.mjs";
 
 export const MODULE_ID = "kg-transit";
@@ -17,6 +17,7 @@ export const SETTINGS = {
   dollarRate: "dollarRate",
   liveryFolder: "liveryFolder",
   theme: "theme",
+  dwell: "dwellSeconds",
   cityAuto: "cityAuto"
 };
 
@@ -165,6 +166,11 @@ export function setting(key) {
 export function worldTheme() {
   const value = game.settings.get(MODULE_ID, SETTINGS.theme);
   return isTheme(value) ? value : DEFAULT_THEME;
+}
+
+/** Optional world dwell override; blank keeps each train type's original default. */
+export function worldDwell() {
+  return dwellValue(game.settings.get(MODULE_ID, SETTINGS.dwell));
 }
 
 export function sceneEnabled(scene) {
