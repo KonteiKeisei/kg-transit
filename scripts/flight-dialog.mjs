@@ -108,7 +108,7 @@ export class FlightDialog extends HandlebarsApplicationMixin(ApplicationV2) {
         duration: formatMinutes(plan.minutes),
         arrives: formatClock(game.time.worldTime + plan.minutes * 60),
         toName: to?.name ?? plan.to,
-        fareText: `$${plan.fare} (${formatMoney(fare)})`,
+        fareText: formatMoney(fare),
         fareYear: year
       },
       total: formatMoney(fare * paying),

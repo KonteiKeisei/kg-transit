@@ -4,7 +4,7 @@ import { FlightController } from "./flight.mjs";
 import { FlightDialog } from "./flight-dialog.mjs";
 import { CARS } from "./catalog.mjs";
 import { applyCityPreset, autoSetupCity, cityPreset, sceneCity, traceOnce } from "./city-setup.mjs";
-import { FLAGS, MODULE_ID, SETTINGS, saveNetwork, sceneEnabled } from "./config.mjs";
+import { FLAGS, MODULE_ID, SETTINGS, cornerSpot, saveNetwork, sceneEnabled } from "./config.mjs";
 import { starterNetwork } from "./demo-network.mjs";
 import { NetworkEditor } from "./editor.mjs";
 import { RideController, partyRides } from "./ride.mjs";
@@ -16,8 +16,11 @@ const layer = new StationLayer();
 const ride = new RideController();
 const flights = new FlightController();
 let editor = null;
+/** Shown in the browser console, to tell which build a server is running. */
+const BUILD = "2026-11-11 dollars";
 
 Hooks.once("init", () => {
+  console.info(`${MODULE_ID} | ${game.modules.get(MODULE_ID)?.version} (build ${BUILD})`);
   const register = (key, data) => game.settings.register(MODULE_ID, key, data);
   register(SETTINGS.theme, {
     name: "Default theme",
@@ -79,8 +82,8 @@ Hooks.once("init", () => {
   });
 
   register(SETTINGS.dollarRate, {
-    name: "Plane tickets: copper per dollar",
-    hint: "What a dollar of the period's airfare costs, in copper pieces. 1000 makes a dollar one platinum piece, as the city fares count it (pp $1); a coast-to-coast coach ticket of 1986 ($321) is then 321 pp.",
+    name: "Money: copper per dollar",
+    hint: "Every price, fare and purse is shown in dollars. Payments still come out of the sheets' coins at this rate. 1000 makes a dollar one platinum piece; a coast-to-coast coach ticket of 1986 ($321) is then 321 pp.",
     scope: "world", config: true, type: Number, default: 1000, range: { min: 10, max: 10000, step: 10 }
   });
   register(SETTINGS.liveryFolder, {
@@ -123,9 +126,18 @@ Hooks.once("ready", () => {
     stationAt: (scene, point) => stationAt(scene, point),
     board: ({ scene = canvas.scene, originId, partyTokenId, destinationId } = {}) => partyRides() && openBoard({ layer, ride, scene, originId, partyTokenId, destinationId }),
     /** A ride or a flight is moving the world's clock (KG Cities' trips follow it meanwhile). */
-    drivingClock: () => ride.rides.size > 0 || !!flights.flight
+    drivingClock: () => ride.rides.size > 0 || !!flights.flight,
+    /** Where the ride window sits ({ right, bottom } px): KG Cities' street views open in the same spot. */
+    cornerSpot: (gap, width) => cornerSpot(gap, width)
   };
   installHandoff({ layer, ride });
+  // With KG Cities: the GM's ride window shows the ride of the party token they have selected,
+  // and nothing when none of theirs is on a train (players always see their own party's).
+  Hooks.on("controlToken", (token, controlled) => {
+    if (!game.user.isGM || !partyRides()) return;
+    if (controlled) ride.picked(token.document?.id ?? token.id);
+    requestAnimationFrame(() => ride.followSelection());
+  });
   if (!globalThis.CALENDARIA) ui.notifications.warn("KG Transit needs Calendaria for its clock and weather.");
 });
 

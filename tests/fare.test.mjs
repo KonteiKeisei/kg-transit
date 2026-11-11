@@ -13,8 +13,13 @@ test("fare settings in copper", () => {
 
 test("wallet value and money text", () => {
   assert.equal(walletValue(wallet(1, 2, 1, 3, 4)), 1000 + 200 + 50 + 30 + 4);
-  assert.equal(formatMoney(150), "1 gp 5 sp");
-  assert.equal(formatMoney(0), "free");
+  // Always dollars, at copper per dollar (1000 by default: $1 a platinum piece).
+  assert.equal(formatMoney(4980), "$4.98");
+  assert.equal(formatMoney(150), "$0.15");
+  assert.equal(formatMoney(1946900), "$1,946.90");
+  assert.equal(formatMoney(150, { rate: 100 }), "$1.50");
+  assert.equal(formatMoney(0), "$0.00");
+  assert.equal(formatMoney(0, { free: true }), "free");
 });
 
 test("exact coins pay exactly", () => {

@@ -163,11 +163,11 @@ export class NetworkEditor extends HandlebarsApplicationMixin(ApplicationV2) {
       sceneDwellDefaultLabel: worldStopDwell !== null ? `${worldStopDwell} s, world`
         : Object.values(KINDS).map((kind) => `${kind.label} ${kind.dwell} s`).join(", "),
       netOpen: this.netOpen,
-      fareText: formatMoney(fareValue(net.fare)),
+      fareText: formatMoney(fareValue(net.fare), { free: true }),
       partyLabel: party?.name ?? "none",
       partyTokens,
       partyMissing: !!net.partyTokenId && !party,
-      coins: COINS.map((c) => ({ key: c.key, label: c.label, selected: c.key === net.fare.coin })),
+      coins: COINS.map((c) => ({ key: c.key, label: `${c.label} (${formatMoney(c.value)})`, selected: c.key === net.fare.coin })),
       // The master theme picker: the world default, or one theme for this whole scene.
       sceneThemes: [
         { key: "", label: "World default", hint: `${THEMES[world].label}, from the module settings`, glyph: "fa-globe", active: !isTheme(net.theme) },

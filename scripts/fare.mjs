@@ -1,5 +1,7 @@
-// Fares in dnd5e coins. Pure: no Foundry.
-// Values in copper: pp 1000, gp 100, ep 50, sp 10, cp 1 (the standard dnd5e rates).
+// Fares in dnd5e coins. Pure apart from reading the dollar rate setting (with a default).
+// Values in copper: pp 1000, gp 100, ep 50, sp 10, cp 1 (the standard dnd5e rates). Money is paid
+// in coins (the sheets keep coins) but always SHOWN in the period's dollars, at the world's
+// copper per dollar (1000 by default: $1 is a platinum piece).
 
 export const COINS = [
   { key: "pp", value: 1000, label: "pp" },
@@ -20,17 +22,16 @@ export function walletValue(currency = {}) {
   return COINS.reduce((sum, coin) => sum + Math.max(0, Math.floor(Number(currency[coin.key]) || 0)) * coin.value, 0);
 }
 
-/** "1 gp 5 sp", "free" for nothing. Prices are stated without electrum. */
-export function formatMoney(copper) {
-  if (!copper) return "free";
-  const parts = [];
-  let left = copper;
-  for (const coin of COINS.filter((c) => c.key !== "ep")) {
-    const n = Math.floor(left / coin.value);
-    if (n) parts.push(`${n} ${coin.label}`);
-    left -= n * coin.value;
-  }
-  return parts.join(" ");
+/** Copper per period dollar: the world's setting, else 1000. */
+export function dollarRate() {
+  try { return Number(globalThis.game?.settings?.get?.("kg-transit", "dollarRate")) || 1000; } catch { return 1000; }
+}
+
+/** An amount in copper as dollars: "$4.98". `free` (a fare of nothing) says "free" instead of "$0.00". */
+export function formatMoney(copper, { rate = dollarRate(), free = false } = {}) {
+  if (!copper && free) return "free";
+  const dollars = Math.max(0, copper) / rate;
+  return `$${dollars.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /** Fewest coins making `copper` exactly (these denominations are canonical, so greedy is optimal). */

@@ -115,17 +115,25 @@ test("two parties ride at once, on one clock; one gets off, the other rides on",
   }
 });
 
-test("each client shows one ride: a player their own party's, and the GM can switch", async () => {
+test("the GM sees the ride of the party token they have selected, and none with none selected", async () => {
   const { controller } = world();
   globalThis.setInterval = () => 1;
+  globalThis.canvas = { tokens: { controlled: [] } };
   controller.init();
   await board(controller, "crew", trip("a", "d"));
   await board(controller, "duo", trip("a", "b"));
   const crew = controller.partyRide("crew"), duo = controller.partyRide("duo");
-  assert.equal(controller.ride.id, crew.id, "the first ride is shown first");
-  controller.focus(duo.id);
-  assert.equal(controller.ride.id, duo.id);
-  assert.equal(controller.watchable().length, 2, "the GM may watch every ride");
+  assert.equal(controller.ride, null, "nothing selected, no ride window");
+  canvas.tokens.controlled = [{ document: { id: "duo" } }];
+  controller.followSelection();
+  assert.equal(controller.ride.id, duo.id, "the selected party's ride");
+  canvas.tokens.controlled = [{ document: { id: "duo" } }, { document: { id: "crew" } }];
+  controller.followSelection();
+  assert.equal(controller.ride.id, crew.id, "the last selected first");
+  canvas.tokens.controlled = [];
+  controller.followSelection();
+  assert.equal(controller.ride, null, "deselected: closed");
+  assert.equal(controller.watchable().length, 2, "the GM may still watch every ride from the tabs");
 });
 
 test("a party boards as a party: its members ride, a party of one as that one, a vehicle stays", async () => {

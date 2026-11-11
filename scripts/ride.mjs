@@ -114,6 +114,7 @@ export class RideController {
     this.#show(before);
     if (this.rides.size) this.bounce.start();
     else this.bounce.stop();
+    this.#watchSelection(this.rides.size > 0);
     if (this.rides.size && this.isDriver) this.#startDriving();
     else this.#stopDriving();
   }
@@ -127,13 +128,49 @@ export class RideController {
   }
 
   #defaultFocus() {
+    // With KG Cities, the GM sees the ride of the party token they have selected, or none.
+    if (game.user.isGM && partyRides()) return this.#selectedRide()?.id ?? null;
     const mine = [...this.rides.values()].find((r) => r.viewers?.includes(game.user.id));
     return mine?.id ?? this.watchable()[0]?.id ?? this.rides.keys().next().value ?? null;
+  }
+
+  /** A token the GM has just selected (the controlToken hook): it alone decides what they see. */
+  picked(tokenId) { this.lastPicked = tokenId; }
+
+  /**
+   * The ride of the token the GM selected last, or null. Only that one token counts: selecting
+   * a party walking the streets closes the train window even if a riding party stays selected
+   * too (KG Cities then shows the street view, never both).
+   */
+  #selectedRide() {
+    const controlled = globalThis.canvas?.tokens?.controlled ?? [];
+    const id = (t) => t.document?.id ?? t.id;
+    const last = controlled.find((t) => id(t) === this.lastPicked) ?? controlled.at(-1);
+    return last ? this.partyRide(id(last)) : null;
+  }
+
+  /** The GM's selection changed (with KG Cities): show its ride, or close the window. */
+  followSelection() {
+    if (!game.user.isGM || !partyRides()) return;
+    const id = this.#selectedRide()?.id ?? null;
+    if (id === this.focusId) return;
+    const before = this.ride;
+    this.focusId = id;
+    this.#show(before);
+  }
+
+  /** The GM's selection is also checked twice a second while rides run, in case a hook is missed. */
+  #watchSelection(on) {
+    if (on && !this.watchTimer && game.user.isGM && partyRides()) this.watchTimer = setInterval(() => this.followSelection(), 500);
+    else if (!on && this.watchTimer) { clearInterval(this.watchTimer); this.watchTimer = null; }
   }
 
   /** Show another ride in this client's window (the GM's tabs; a player stays on their own). */
   focus(id) {
     if (!game.user.isGM || !this.rides.has(id) || id === this.focusId) return;
+    // With KG Cities the window follows the selection, so a tab selects that party's token.
+    const token = partyRides() ? globalThis.canvas?.tokens?.get(this.rides.get(id).partyTokenId) : null;
+    if (token) { token.control({ releaseOthers: true }); this.picked(token.document.id); }
     const before = this.ride;
     this.focusId = id;
     this.#show(before);

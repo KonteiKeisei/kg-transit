@@ -210,7 +210,7 @@ The network's settings are summed up in one line near the top of the editor (nam
 2. As GM, **double-click** a station to open **Board**.
 3. **Riders** are ticked for you: the party token's members (if set), or the party and characters standing at the station. Untick anyone staying behind. **Waive** lets someone ride free.
 4. Pick the **destination** from the list (grouped by line), or click its icon on the map. You'll see the route, any changes, the trip length and the arrival time.
-5. If there is a fare, choose who pays: **each rider** or the **party's funds** (the group actor's coins). Change is given in the fewest coins.
+5. If there is a fare (shown in dollars), choose who pays: **each rider** or the **party's funds** (the group actor's coins). The money comes out of the sheets' coins at the **Money: copper per dollar** setting, with change in the fewest coins.
 6. Choose who sees the ride: **Riders only** (other players get a small banner) or **Everyone**.
 7. Click **Board**. A chat card records the trip and fares, and the game unpauses.
 
@@ -234,7 +234,7 @@ With **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** active, each par
 - **A party boards as a party.** Board takes the selected party token, or else the party token nearest the station. Its members are the riders (a party of one rides as that one person): they pay the fares, and their players see the ride. A party's vehicles stay parked. Only the party token travels the line.
 - **One ride per party.** A party already riding can't board again until it gets off. Another party can board at the same time, on any line.
 - **One clock for every ride.** The world clock runs once for all of them, in real time. **Skip**, **Get off next stop** and **Arrive** run the clock on, so every other ride moves on with it; **Emergency stop** ends only its own ride.
-- **The ride window** shows one ride at a time. Each player sees their own party's ride, and only that. The GM gets a row of tabs across the top while more than one ride is under way, to switch between them; the camera and the GM buttons follow the tab the GM is on.
+- **The ride window** shows one ride at a time. Each player sees their own party's ride, and only that, whatever they have selected. The GM sees the ride of the party token they have selected (nothing selected, no window; a party on the street instead, KG Cities' street view in the same spot), with a row of tabs across the top while more than one ride is under way; the camera and the GM buttons follow the ride shown.
 - **Boarding, fares and every control stay the GM's**, as without KG Cities.
 - **From KG Cities' travel.** A party that walks, cabs, drives or teleports to a station gets the Board window there, that party chosen. KG Cities' travel window also offers the **Train**: the best stations to walk to and from, door to door; Board then opens at the first with the last chosen, and after the ride the party walks on to where it was going.
 - **One clock.** While a ride or a flight runs the world's clock, KG Cities' trips in the streets move with it rather than running it themselves.
@@ -249,7 +249,7 @@ On a **[KG Cities](https://github.com/KonteiKeisei/kg-cities)** scene, the city'
 1. **Who's flying:** tick the travellers, or **Whole party** for every member of the party at once. **Waive** lets someone fly free.
 2. **Destination:** choose a destination city (every other city with an airport), then one of its airports (a city with one airport has it chosen for you). **Checking bags** adds the ticket counter and the baggage carousel.
 3. The flight appears: the airline and aircraft of the day for that route (Eastern, Delta, TWA, Pan Am, United, American, Northwest and others; the 747, DC-10, L-1011, A300 and 767), the distance, and every step curb to curb with its time: through the airport (a metal detector and a walk to the gate in 1986, quicker at small airports), boarding, taxi and takeoff, the flight (the jet stream speeds eastbound flights), taxi in, off the plane, baggage claim.
-4. **Fare:** the average coach fare of the period for that distance, the government's fare level of 1986 (it changed every six months), converted to coins by the **Plane tickets** setting. Pay from each traveller or the party's funds.
+4. **Fare:** the average coach fare of the period for that distance, the government's fare level of 1986 (it changed every six months), shown in dollars and paid in coins at the **Money: copper per dollar** setting. Pay from each traveller or the party's funds.
 5. **Encounter on the way** (optional): pick one of your scenes and when it happens: in the departing airport, on the plane before takeoff, during the flight, on the plane after landing, or in the arriving airport.
 6. **Fly.**
 
@@ -287,7 +287,7 @@ Behind the flight, from takeoff, the destination city's scene is found (one of t
 | Steam coach: ride sound | World | The same for the steam coach. |
 | Subway car / Steam coach: interior image | World | Optional replacement interior art. It must be 1672 x 941 px with **transparent windows**, looking down the car at its end door. Empty uses the built-in art. |
 | Plane liveries folder | World | Optional. A folder of your own airline liveries named `<airline>-<plane>.webp` or `.png` (for example `united-dc10.webp`). A flight uses its airline's livery when there is one, otherwise the white plane with its tail in the airline's colour. |
-| Plane tickets: copper per dollar | World | What a dollar of airfare costs, in copper. 1000 (the default) makes a dollar one platinum piece, as the city fares count it. |
+| Money: copper per dollar | World | Every price, fare and purse is shown in dollars; payments come out of the sheets' coins at this rate. 1000 (the default) makes a dollar one platinum piece. |
 | Ride sound volume | Each player | Volume of the ride sound (and the jet's engines in flight). |
 | Terminal ambiance volume | Each player | The airport terminal heard while a flight is on the ground. 50% by default. |
 | Flights: captain's word at taxi | World | Optional. Your own announcement for the start of taxiing out, any length. Empty uses the built-in one. |
